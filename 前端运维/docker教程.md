@@ -556,30 +556,28 @@ docker container prune
 
 # 4.Docker数据管理
 
-## 4.1Docker数据卷
+## 4.1什么是数据卷？
 
-### 4.1.1什么是数据卷？
+简单来说，数据卷是一个可供一个或多个容器使用的特殊目录，用于持久化数据以及共享容器间的数据，它以正常的文件或目录的形式存在于宿主机上。另外，其生命周期独立于容器的生命周期，即当你删除容器时，数据卷并不会被删除。
 
-**简单来说，数据卷是一个可供一个或多个容器使用的特殊目录，用于持久化数据以及共享容器间的数据，它以正常的文件或目录的形式存在于宿主机上。** 另外，其生命周期独立于容器的生命周期，即当你删除容器时，数据卷并不会被删除。
-
-### 4.1.2为什么需要数据卷？
+## 4.2为什么需要数据卷？
 
 Docker 镜像由多个文件系统（只读层）叠加而成。Docker 会加载只读镜像层，并在镜像栈顶部添加一个读写层。当运行容器后，如果修改了某个已存在的文件，那么该文件将会从下面的只读层复制到上面的读写层，同时，该文件在只读层中仍然存在。**当我们删除 Docker 容器，并通过镜像重新启动容器时，之前的更改的文件将会丢失。**
 
-### 4.1.3数据卷特性
+## 4.3数据卷特性
 
 - 数据卷可以在容器之间共享和重用；
 - 对数据卷的修改会立刻生效；
 - 更新数据卷不会影响镜像；
 - 数据卷默认一直存在，即使容器被删除；
 
-### 4.1.4挂载数据卷
+## 4.4挂载数据卷
 
 Docker 提供了 3 种不同的方式将数据从宿主机挂载到容器中。
 
 ![Docker 挂载数据卷](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202405202351589.jpeg)
 
-> **1.volume (最常用的方式)**
+### 4.4.1volume (最常用的方式)
 
 volume : Docker 管理宿主机文件系统的一部分，默认位于 `/var/lib/docker/volumes` 目录下, 也是最常用的方式。
 
@@ -587,49 +585,49 @@ volume : Docker 管理宿主机文件系统的一部分，默认位于 `/var/lib
 
 看上图，所有的 Docker 容器数据都保存在 `/var/lib/docker/volumes` 目录下。若容器运行时未指定数据卷， Docker 创建容器时会使用默认的匿名卷（名称为一堆很长的 ID）。
 
-**注意：Mac 系统中， Docker 是基于虚拟机的 ，必须登录到虚拟机里面，登录后在目录 `/var/lib/docker/volumes/` 下即可找到数据卷。**
+> **注意：Mac 系统中， Docker 是基于虚拟机的 ，必须登录到虚拟机里面，登录后在目录 `/var/lib/docker/volumes/` 下即可找到数据卷。**
 
-> **2.bind mount（比较常用的方式）**
+### 4.4.2.bind mount（比较常用的方式）
 
 bind mount: 意为可以存储在宿主机中的任意位置。需要注意的是，bind mount 在不同的宿主机系统时不可移植的，比如 Windows 和 Linux 的目录结构是不一样的，bind mount 所指向的 host 目录也不一样。这也是为什么 bind mount 不能出现在 Dockerfile 中的原因所在，因为这样 Dockerfile 就不可移植了。
 
-> **3.tmpfs mount (一般不用这种方式)**
+### 4.4.3.tmpfs mount (一般不用这种方式)
 
 tmpfs mount : 挂载存储在宿主机的内存中，而不会写入宿主机的文件系统，一般不用此种方式。
 
-### 4.1.5Volume 使用
+## 4.5Volume 使用
 
-> **1.创建一个数据卷**
+### 4.5.1创建一个数据卷
 
 执行如下命令创建数据卷：
 
-```
-docker volume create test-vol
-```
-
-> **2.查看所有的数据卷**
-
-```
-docker volume ls
+```shell
+$ docker volume create test-vol
 ```
 
-> **3.查看数据卷信息**
+### 4.5.2查看所有的数据卷
+
+```shell
+$ docker volume ls
+```
+
+### 4.5.3查看数据卷信息
 
 执行如下命令，可以查看指定的数据卷信息：
 
-```
+```shell
 # 查看数据卷名为 test-vol 的信息
-docker volume inspect test-vol
+$ docker volume inspect test-vol
 ```
 
-> **4.运行容器时挂载数据卷**
+### 4.5.4运行容器时挂载数据卷
 
 数据卷 `test-vol`创建成功后，我们运行一个 Nginx 容器，并尝试挂载该数据卷，挂载命令支持两种：
 
-1. `-v`
+> 1.`-v`
 
-```
-docker run -d -it --name=test-nginx -p 8011:80 -v test-vol:/usr/share/nginx/html nginx:1.13.12
+```shell
+$ docker run -d -it --name=test-nginx -p 8011:80 -v test-vol:/usr/share/nginx/html nginx:1.13.12
 ```
 
 参数说明：
@@ -639,17 +637,17 @@ docker run -d -it --name=test-nginx -p 8011:80 -v test-vol:/usr/share/nginx/html
 - `-p 8011:80` : 将容器的 80 端口挂载到宿主机的 8011 端口；
 - `-v test-vol:/usr/share/nginx/html` : 将 `test-vol` 数据卷挂载到容器中的 /usr/share/nginx/html 目录上；
 
-2. `--mount`
+> 2.`--mount`
 
-```
-docker run -d -it --name=test-nginx -p 8011:80 --mount source=test-vol,target=/usr/share/nginx/html nginx:1.13.12
+```shell
+$ docker run -d -it --name=test-nginx -p 8011:80 --mount source=test-vol,target=/usr/share/nginx/html nginx:1.13.12
 ```
 
 参数说明：
 
 - `--mount source=test-vol,target=/usr/share/nginx/html` : 将 `test-vol` 数据卷挂载到容器中的 /usr/share/nginx/html 目录上；
 
-#### `-v` 和 `--mount` 有什么区别？
+> 3.`-v` 和 `--mount` 有什么区别？
 
 都是挂载命令，使用 `-v` 挂载时，如果宿主机上没有指定文件不会报错，会自动创建指定文件；当使用 `--mount`时，如果宿主机中没有这个文件会报错找不到指定文件，不会自动创建指定文件。
 
@@ -665,27 +663,27 @@ docker run -d -it --name=test-nginx -p 8011:80 --mount source=test-vol,target=/u
 
 可以发现数据卷相关数据都还在，表明数据卷的生命周期独立于容器。另外，若下次再创建 Nginx 容器，还可以复用这个数据卷，复用性以及扩张性都非常不错。
 
-> **5.删除数据卷**
+### 4.5.5删除数据卷
 
 由于数据卷的生命期独立于容器，想要删除数据卷，就需要我们手动来操作, 执行命令如下：
 
-```
-docker volume rm test-vol
+```shell
+$ docker volume rm test-vol
 ```
 
 1. 如果你需要在删除容器的同时移除数据卷，请使用 `docker rm -v` 命令。
 2. 对于那些没有被使用的数据卷，可能会占用较多的磁盘空间，你可以通过如下命令统一删除：
 
-```
-docker volume prune
+```shell
+$ docker volume prune
 ```
 
-> **6.bind mount 使用**
+### 4.5.6bind mount 使用
 
 通过 bind mount 模式可以挂载到宿主机的任意位置，示例如下：
 
-```
-docker run -d -it --name=test-nginx -p 8011:80 -v /docker/nginx1:/usr/share/nginx/html nginx:1.13.12
+```shell
+$ docker run -d -it --name=test-nginx -p 8011:80 -v /docker/nginx1:/usr/share/nginx/html nginx:1.13.12
 ```
 
 参数说明：
@@ -694,8 +692,8 @@ docker run -d -it --name=test-nginx -p 8011:80 -v /docker/nginx1:/usr/share/ngin
 
 容器运行成功后，进入容器中：
 
-```
-docker exec -it test-nginx /bin/bash
+```shell
+$ docker exec -it test-nginx /bin/bash
 ```
 
 ![docker 进入容器](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202405210033356.jpeg)
@@ -712,14 +710,386 @@ docker exec -it test-nginx /bin/bash
 
 ![进入 docker 容器](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202405210034494.jpeg)
 
+## 4.6数据卷容器
+
+如果你有一些需要持续更新的数据需要在容器之间共享，最佳实践是创建数据卷容器。**数据卷容器，其实就是一个正常的 Docker 容器，专门用于提供数据卷供其他容器挂载的**。
+
+### 4.6.1创建数据卷容器
+
+运行一个容器，并创建一个名为 `dbdata` 的数据卷：
+
+```shell
+$ docker run -d -v /dbdata --name dbdata training/postgres echo Data-only container for postgres
+```
+
+![Docker 创建数据卷容器](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202405222224999.jpeg)
+
+容器运行成功后，会发现该数据卷容器处于停止运行状态，这是因为数据卷容器并不需要处于运行状态，只需用于提供数据卷挂载即可。
+
+### 4.6.2挂载数据卷
+
+`--volumes-from` 命令支持从另一个容器挂载容器中已创建好的数据卷。
+
+```shell
+$ docker run -d --volumes-from dbdata --name db1 training/postgres
+$ docker run -d --volumes-from dbdata --name db2 training/postgres
+$ docker ps
+CONTAINER ID       IMAGE                COMMAND                CREATED             STATUS              PORTS               NAMES
+7348cb189292       training/postgres    "/docker-entrypoint.   11 seconds ago      Up 10 seconds       5432/tcp            db2
+a262c79688e8       training/postgres    "/docker-entrypoint.   33 seconds ago      Up 32 seconds       5432/tcp            db1
+```
+
+还可以使用多个 `--volumes-from` 参数来从多个容器挂载多个数据卷。 也可以从其他已经挂载了数据卷的容器来挂载数据卷。
+
+如果删除了挂载的容器（包括 dbdata、db1 和 db2），数据卷并不会被自动删除。如果想要删除一个数据卷，必须在删除最后一个还挂载着它的容器时使用 `docker rm -v` 命令来指定同时删除关联的容器。
+
+## 4.7Docker 使用数据卷容器备份、恢复、迁移数据卷
+
+### 4.7.1备份
+
+首先使用 `--volumes-from` 命令创建一个加载 dbdata 的容器卷容器，并将宿主机当前目录挂载到容器的 /backup 目录，命令如下：
+
+```shell
+$ sudo docker run --volumes-from dbdata -v $(pwd):/backup ubuntu tar cvf /backup/backup.tar /dbdata
+```
+
+容器启动后，使用了 `tar` 命令来将 dbdata 数据卷备份为容器中 /backup/backup.tar 文件，因为挂载了的关系，宿主机的当前目录下也会生成 `backup.tar` 备份文件。
+
+### 4.7.2恢复/迁移
+
+如果要恢复数据到一个容器，首先创建一个带有空数据卷的容器 dbdata2。
+
+```shell
+$ sudo docker run -v /dbdata --name dbdata2 ubuntu /bin/bash
+```
+
+然后创建另一个容器，挂载 dbdata2 容器卷中的数据卷，并使用 `untar` 解压备份文件到挂载的容器卷中。
+
+```shell
+$ sudo docker run --volumes-from dbdata2 -v $(pwd):/backup busybox tar xvf
+/backup/backup.tar
+```
+
+为了查看/验证恢复的数据，可以再启动一个容器挂载同样的容器卷来查看：
+
+```shell
+$ sudo docker run --volumes-from dbdata2 busybox /bin/ls /dbdata
+```
+
 # 5.Dockerfile
+
+## 5.1什么是 Dockerfile ?
+
+Dockerfile 是一个被用来构建 Docker 镜像的文本文件，该文件中包含了一行行的指令（Instruction），这些指令对应着修改、安装、构建、操作的命令，每一行指令构建一层（layer），层层累积，于是有了一个完整的镜像。
+
+说的通俗些，大家可以这样理解： Dockerfile 是一张建筑施工图纸，工人基于这张图纸，一层一层的建造起了一座高楼大厦。
+
+## 5.2为什么需要 Dockerfile ?
+
+Dockfile 可以解决镜像如下问题：
+
+### 5.2.1镜像透明性问题
+
+通常情况下，我们下载镜像都是从 DockerHub 官方仓库拉取镜像，这些镜像都是安全可靠的。但是仓库中也有别人上传的镜像，可以说是完全的黑盒镜像了，镜像被植入了病毒都是有可能的。有了 Dockerfile 就很好的解决了这个问题, 通过它可以清楚的看到镜像每一层的构建指令，从而判断该镜像是否安全可靠。
+
+### 5.2.2镜像 layer 层无法复用问题
+
+镜像是由一层层的 layer 叠加而成，通过 Dockerfile 构建镜像时，如果发现本地存在可以重复利用的 layer，就不会重复下载，这样可以节省存储空间。
+
+举个例子更容易理解🌰，比如你之前已经构建了一个基于 Centos 的，并在其上安装了 JDK 1.8 的镜像；后续，你又有了新的需求，想在之前的镜像基础上，再安装一个 Tomcat， 那么在通过 Dockfile 构建镜像时，前面的 Centos 和 JDK 1.8 层都是可以被复用的。
+
+### 5.2.3镜像维护与分享问题
+
+通过 Dockerfile 构建、定制的镜像也更易于被维护与分享，如果需要新的定制，直接改 Dockerfile 重新构建就好啦~
+
+## 5.3Dockerfile 制作构建镜像
+
+### 5.3.1开始制作镜像
+
+新建一个空白目录，创建一个名为 `Dockerfile` 的文本文件：
+
+```shell
+$ mkdir mynginx
+$ cd mynginx
+$ touch Dockerfile
+```
+
+编辑 `Dockerfile`，添加如下指令：
+
+```dockerfile
+FROM nginx
+RUN echo '<h1>Hello, Nginx by Docker!</h1>' > /usr/share/nginx/html/index.html
+```
+
+这个 `Dockerfile` 非常简单，总共也就运用了两条指令：`FROM` 和 `RUN` 。
+
+### 5.3.2FROM 指定基础镜像
+
+制作镜像必须要先声明一个基础镜像，基于基础镜像，才能在上层做定制化操作。
+
+通过 **`FROM`指令可以指定基础镜像**，在 Dockerfile 中，`FROM` 是必备指令，且必须是第一条指令。比如，上面编写的 Dockerfile 文件第一行就是 `FROM nginx`, 表示后续操作都是基于 Ngnix 镜像之上。
+
+> ### 特殊的镜像：scratch
+
+通常情况下，基础镜像在 DockerHub 都能找到，如：
+
+- **中间件相关**：`nginx`、`kafka`、`mongodb`、`redis`、`tomcat` 等；
+- **开发语言环境** ：`openjdk`、`python`、`golang` 等；
+- **操作系统**：`centos` 、`alpine` 、`ubuntu` 等；
+
+除了这些常用的基础镜像外，还有个比较特殊的镜像 : `scratch` 。它表示一个空白的镜像：
+
+```
+FROM scratch
+...
+```
+
+以 `scratch` 为基础镜像，表示你不以任何镜像为基础。
+
+### 5.3.3RUN 执行命令
+
+`RUN` 指令用于执行终端操作的 shell 命令，另外，`RUN` 指令也是编写 Dockerfile 最常用的指令之一。它支持的格式有如下两种：
+
+- **1、`shell` 格式**: `RUN <命令>`，这种格式好比在命令行中输入的命令一样。举个栗子，上面编写的 Dockerfile 中的 `RUN` 指令就是使用的这种格式：
+
+```dockerfile
+RUN echo '<h1>Hello, Nginx by Docker!</h1>' > /usr/share/nginx/html/index.html
+```
+
+- **2、`exec` 格式**: `RUN ["可执行文件", "参数1", "参数2"]`, 这种格式好比编程中调用函数一样，指定函数名，以及传入的参数。
+
+```dockerfile
+RUN ["./test.php", "dev", "offline"] 等价于 RUN ./test.php dev offline
+```
+
+### 5.3.4新手构建镜像的体积太大？太臃肿？
+
+初学 Docker 的小伙伴往往构建出来的镜像体积非常臃肿，这是什么原因导致的？
+
+我们知道，Dockerfile 中每一个指令都会新建一层，过多无意义的层导致很多运行时不需要的东西，都被打包进了镜像内，比如编译环境、更新的软件包等，这就导致了构建出来的镜像体积非常大。
+
+举个例子：
+
+```dockerfile
+FROM centos
+RUN yum -y install wget
+RUN wget -O redis.tar.gz "http://download.redis.io/releases/redis-5.0.3.tar.gz"
+RUN tar -xvf redis.tar.gz
+```
+
+执行以上 Dockerfile 会创建 3 层，另外，下载的 `redis.tar.gz`也没有删除掉，可优化成下面这样：
+
+```dockerfile
+FROM centos
+RUN yum -y install wget \
+    && wget -O redis.tar.gz "http://download.redis.io/releases/redis-5.0.3.tar.gz" \
+    && tar -xvf redis.tar.gz \
+    && rm redis.tar.gz
+```
+
+如上，仅仅使用了一个 `RUN` 指令，并使用 `&&` 将各个命令串联起来。之前的 3 层被简化为了 1 层，同时删除了无用的压缩包。
+
+> Dockerfile 支持 shell 格式命令末尾添加 `\` 换行，以及行首通过 `#` 进行注释。保持良好的编写习惯，如换行、注释、缩进等，可以让 Dockerfile 更易于维护。
+
+### 5.3.5构建镜像
+
+Dockerfile 文件编写好了以后，就可以通过它构建镜像了。接下来，我们来构建前面定制的 nginx 镜像，首先，进入到该 Dockerfile 所在的目录下，执行如下命令：
+
+```
+docker build -t nginx:test .
+```
+
+> 注意：命令的最后有个点 `.` , 很多小伙伴不注意会漏掉，`.`指定**上下文路径**，也表示在当前目录下。
+
+!["通过 Dockerfile 构建 Docker 镜像"](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202405222322631.jpeg)
+
+构建命令执行完成后，执行 `docker images` 命令查看本地镜像是否构建成功：
+
+![Docker 查看本地镜像列表](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202405222322258.jpeg)
+
+镜像构建成功后，运行 Nginx 容器：
+
+```
+docker run -d -p 80:80 --name nginx nginx:test
+```
+
+容器运行成功后，访问 `localhost:80`, 可以看到首页已经被成功修改了：
+
+![测试新构建的 Docker 容器](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202405222323194.jpeg)
+
+### 5.3.6镜像构建之上下文路径
+
+前面的构建命令最后有一个 `.`, 它表示上下文路径，它又是个啥？
+
+```
+docker build -t nginx:test .
+```
+
+理解它之前，我们要知道 Docker 在运行时分为 Docker 引擎和客户端工具，是一种 C/S 架构。看似我们在命令收入了一行 Docker 命令，立即就执行了，背后其实是将命令提交给了客户端，然后客户端通过 API 与 Docker 引擎交互，真正干活的其实是 Docker 引擎。
+
+话说回来，在构建镜像时，经常会需要通过 `COPY` 、`ADD` 指令将一些本地文件复制到镜像中。而刚才我们也说到了，执行 `docker build` 命令并非直接在本地构建，而是通过 Docker 引擎来完成的，那么要如何解决 Docker 引擎获取本地文件的问题呢？
+
+于是引入了上下文的概念。构建镜像时，指定上下文路径，客户端会将路径下的所有内容打包，并上传给 Docker 引擎，这样它就可以获取构建镜像所需的一切文件了。
+
+> 注意：上下文路径下不要放置一些无用的文件，否则会导致打包发送的体积过大，速度缓慢而导致构建失败。当然，我们也可以想编写 `.gitignore` 一样的语法写一个 `.dockerignore`, 通过它可以忽略上传一些不必要的文件给 Docker 引擎。
+
+## 5.4`docker build` 的其他用法
+
+### 5.4.1通过 Git repo 构建镜像
+
+除了通过 Dockerfile 来构建镜像外，还可以直接通过 URL 构建，比如从 Git repo 中构建：
+
+```shell
+# $env:DOCKER_BUILDKIT=0
+# export DOCKER_BUILDKIT=0
+
+$ docker build -t hello-world https://github.com/docker-library/hello-world.git#master:amd64/hello-world
+
+Step 1/3 : FROM scratch
+ --->
+Step 2/3 : COPY hello /
+ ---> ac779757d46e
+Step 3/3 : CMD ["/hello"]
+ ---> Running in d2a513a760ed
+Removing intermediate container d2a513a760ed
+ ---> 038ad4142d2b
+Successfully built 038ad4142d2b
+```
+
+上面的命令指定了构建所需的 Git repo, 并且声明分支为 `master`, 构建目录为 `amd64/hello-world`。运行命令后，Docker 会自行 `git clone` 这个项目，切换分支，然后进入指定目录开始构建。
+
+### 5.4.2通过 tar 压缩包构建镜像
+
+```shell
+$ docker build http://server/context.tar.gz
+```
+
+如果给定的 URL 是个 `tar` 压缩包，那么 Docker 会自动下载这个压缩包，并自动解压，以其作为上下文开始构建。
+
+### 5.4.3从标准输入中读取 Dockerfile 进行构建
+
+```shell
+$ docker build - < Dockerfile
+```
+
+或
+
+```shell
+$ cat Dockerfile | docker build -
+```
+
+标准输入模式下，如果传入的是文本文件，Docker 会将其视为 `Dockerfile`，并开始构建。需要注意的是，这种模式是没有上下文的，它无法像其他方法那样将本地文件通过 `COPY` 指令打包进镜像。
+
+### 5.4.4从标准输入中读取上下文压缩包进行构建
+
+```shell
+$ docker build - < context.tar.gz
+```
+
+标准输入模式下，如果传入的是压缩文件，如 `tar.gz` 、`gzip` 、 `bzip2` 等，Docker 会解压该压缩包，并进入到里面，将里面视为上下文，然后开始构建。
+
+## 5.5Dockerfile 常用指令汇总
+
+想要熟练使用 Dockerfile 制作构建镜像 ，就需要熟悉 Dockerfile 常用的一些指令，除了前面小节中提到的 `COPY` 、`ADD` 指令外，Dockerfile 还额外提供了十多个指令。下面是 Dockerfile 常用指令汇总：
+
+- [COPY 复制文件](https://www.quanxiaoha.com/docker/dockerfile-copy-file.html) ；
+- [ADD 更高级的复制文件](https://www.quanxiaoha.com/docker/dockerfile-add-file.html) ；
+- [CMD 容器启动命令](https://www.quanxiaoha.com/docker/dockerfile-cmd.html) ；
+- [ENTRYPOINT 入口点](https://www.quanxiaoha.com/docker/dockerfile-entrypoint.html) ；
+- [ENV 设置环境变量](https://www.quanxiaoha.com/docker/dockerfile-env.html) ；
+- [ARG 构建参数](https://www.quanxiaoha.com/docker/dockerfile-arg.html) ；
+- [VOLUMN 定义匿名数](https://www.quanxiaoha.com/docker/dockerfile-volumn.html) ；
+- [EXPOSE 暴露端口](https://www.quanxiaoha.com/docker/dockerfile-expose.html) ；
+- [WORKDIR 指定工作目录](https://www.quanxiaoha.com/docker/dockerfile-workdir.html) ；
+- [USER 指定当前用户](https://www.quanxiaoha.com/docker/dockerfile-user.html) ；
+- [HEALTHCHECK 健康检查](https://www.quanxiaoha.com/docker/dockerfile-healthcheck.html) ；
+- [ONBUILD 二次构建](https://www.quanxiaoha.com/docker/dockerfile-onbuild.html) ；
+- [LABEL 为镜像添加元数据](https://www.quanxiaoha.com/docker/dockerfile-label.html) ；
+- [SHELL 指令](https://www.quanxiaoha.com/docker/dockerfile-shell.html) ；
 
 # 6.Docker Compose
 
+## 6.1Docker Compose 是干什么的？
+
+**`Docker Compose` 是 Docker 官方的开源项目，能够实现对 Docker 容器集群的快速编排，以保证快速部署分布式应用。**
+
+### 6.1.1Docker Compose 解决了什么问题？
+
+在实际的生产环境中，往往需要多个容器配合工作，才能称的上一个完整的应用服务。
+
+举个栗子，你想搭建一个 Web 服务，除了 Web 服务容器本身，若涉及数据存储，就需要依赖数据库容器（Mysql、Mongdb 等）；若想实现分词搜索，就需要依赖搜索引擎容器（Elasticsearch、Solor 等）；其他诸如缓存容器、负载均衡容器等。
+
+同时，部署和管理繁多的容器服务是非常困难的。有了 `Docker Compose` ，就能很好的解决这个问题！`Docker Compose` 通过一个声明式的配置文件 `docker-compose.yml` 来描述整个应用，使用一条命令即可完成部署。应用部署成功后，还可以通过一系列简单的命令实现对应用生命周期的管理。甚至，配置文件还可以置于版本控制系统中进行存储和管理。
+
+### 6.1.2Compose 中的核心概念
+
+`Compose` 中有两个重要的概念：
+
+- 服务 (`service`)：一个应用的容器，实际上可以包括若干运行相同镜像的容器实例。
+- 项目 (`project`)：由一组关联的应用容器组成的一个完整业务单元，在 `docker-compose.yml` 文件中定义
+
+## 6.2Docker Compose 安装与卸载
+
+### 6.2.1Linux & MacOS 系统安装
+
+Linux & MacOS 系统中，Docker Compose 可以通过如下两种方式来安装：
+
+- 1、通过二进制包安装；
+- 2、通过 PIP 安装；
+
+a. 通过二进制包安装
+
+从 [官方 GitHub Release](https://github.com/docker/compose/releases) 直接下载编译好的二进制文件即可，例如，在 Linux 64 位系统上直接下载对应的二进制包：
+
+```shell
+$ sudo curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+
+# 国内用户可以使用以下方式加快下载
+$ sudo curl -L https://download.fastgit.org/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+
+$ sudo chmod +x /usr/local/bin/docker-compose
+```
+
+b. 通过 PIP 安装
+
+> 注意：`x86_64` 架构的 Linux 建议按照上边的方法下载二进制包进行安装，如果您计算机的架构是 `ARM` (例如，树莓派)，再使用 `pip` 安装。
+
+如果你的机器安装了 Python 环境，还可以将 Compose 当作一个 Python 应用来从 pip 源中安装，安装命令如下：
+
+```shell
+$ sudo pip install -U docker-compose
+```
+
+若输出类似如下信息，表明安装成功：
+
+```shell
+Collecting docker-compose
+  Downloading docker-compose-1.27.4.tar.gz (149kB): 149kB downloaded
+...
+Successfully installed docker-compose cached-property requests texttable websocket-client docker-py dockerpty six enum34 backports.ssl-match-hostname ipaddress
+```
+
+### 6.2.2卸载 Docker Compose
+
+如果是二进制包方式安装的，删除二进制文件即可。
+
+```shell
+$ sudo rm /usr/local/bin/docker-compose
+```
+
+如果是通过 `pip` 安装的，则执行如下命令即可删除。
+
+```shell
+$ sudo pip uninstall docker-compose
+```
+
 # 7.网络原理
+
+
 
 # 实战案例
 
+
+
 # idea整合docker
 
-导入成功后，就可以看到新生成的镜像了：
