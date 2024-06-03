@@ -108,8 +108,8 @@ docker search --filter=stars=100 mysql
 
 可以通过 `pull` 命令下载镜像, 命令如下：
 
-```Bash
-docker pull [IMAGE_NAME]:[TAG]
+```sh
+$ docker pull [IMAGE_NAME]:[TAG]
 ```
 
 参数说明：
