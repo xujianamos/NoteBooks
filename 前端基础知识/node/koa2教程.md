@@ -6,17 +6,11 @@
 npm init -y
 ```
 
-生成`package.json`文件:
-
-- 记录项目的依赖
-
 ## 2 git 初始化
 
 ```
 git init
 ```
-
-生成'.git'隐藏文件夹, git 的本地仓库
 
 ## 3 创建 ReadMe 文件
 
@@ -50,7 +44,7 @@ app.listen(3000, () => {
 
 在终端, 使用`node src/main.js`
 
-![image-20210521142016066](http://image.brojie.cn/image-20210521142016066.png)
+![image-20210521142016066](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202407142343211.png)
 
 # 三. 项目的基本优化
 
@@ -253,7 +247,7 @@ npm i koa-body
 
 改写`app/index.js`
 
-![image-20210521165536780](http://image.brojie.cn/image-20210521165536780.png)
+![image-20210521165536780](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202407142347026.png)
 
 ## 3 解析请求数据
 
