@@ -1,0 +1,57 @@
+/* 控制文档内容区域宽度：normal / wide / full */
+
+/* 默认（wide）：增加最大宽度 */
+:root[data-doc-width="wide"] {
+  --vp-doc-max-width: 1200px;
+}
+
+/* 正常（跟随默认主题） */
+:root[data-doc-width="normal"] {
+  --vp-doc-max-width: 760px;
+}
+
+/* 通栏（接近全宽） */
+:root[data-doc-width="full"] .VPDoc .container {
+  max-width: 100% !important;
+}
+:root[data-doc-width="full"] .VPDoc .content {
+  max-width: 100% !important;
+}
+
+/* 对默认主题进行适配：使用变量控制内容宽度 */
+.VPDoc .content {
+  max-width: var(--vp-doc-max-width, 1200px);
+}
+
+/* 自适应布局：左右两侧贴边，中间内容自适应 */
+@media (min-width: 1280px) {
+  :root[data-adaptive="on"] .VPDoc .container {
+    max-width: 100% !important;
+    padding-left: calc(var(--vp-sidebar-width, 272px) + 16px);
+    padding-right: calc(var(--vp-aside-width, 300px) + 16px);
+  }
+  :root[data-adaptive="on"] .VPDoc .content {
+    max-width: none !important;
+    margin: 0; /* 取消居中 */
+  }
+  :root[data-adaptive="on"] .VPDoc .main {
+    max-width: none !important;
+  }
+  :root[data-adaptive="on"] .VPDocAside {
+    position: fixed;
+    top: var(--vp-nav-height);
+    right: 0;
+    height: calc(100vh - var(--vp-nav-height));
+    width: var(--vp-aside-width, 300px);
+    overflow: auto;
+    padding-right: 12px;
+  }
+  :root[data-adaptive="on"] .VPSidebar {
+    position: fixed;
+    top: var(--vp-nav-height);
+    left: 0;
+    bottom: 0;
+    width: var(--vp-sidebar-width, 272px);
+    overflow: auto;
+  }
+}

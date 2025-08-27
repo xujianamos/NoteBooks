@@ -4,13 +4,13 @@ Next.js 是一个用于构建全栈 Web 应用程序的 React 框架。您可以
 
 # 安装
 
-> 系统要求：node >= 18.17 或更高版本
+> 系统要求：node >= 18.18 或更高版本
 
 ## 1.创建新的项目
 
 执行npm，按照提示创建项目，建议使用 `src` 目录来存放源码。
 
-```
+```bash
 npx create-next-app@latest --typescript
 # or
 yarn create next-app --typescript
@@ -20,7 +20,7 @@ yarn create next-app --typescript
 
 之后会自动生成项目，进入项目目录，你会看到如下的目录结构。
 
-![folder-structure](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041335045.avif)
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041335045.avif" alt="folder-structure" style="zoom:50%;" />
 
 - `app`: 后续所有代码存的放位置。
 - `next.config.js`: next.config.js存放了next的开发、生产环境下的配置。
@@ -38,7 +38,7 @@ yarn create next-app --typescript
 
 ## 1.介绍
 
-![terminology](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041416903.avif)
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041416903.avif" alt="terminology" style="zoom:50%;" />
 
 > **路由规则，约定大于配置**
 
@@ -46,11 +46,11 @@ NextJs的路由系统是一个树形结构，最顶层是app目录，然后是�
 
 通过一张url和路由文件的映射关系图来直观的感受下：
 
-![terminology](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041423817.avif)
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041423817.avif" alt="terminology" style="zoom:50%;" />
 
 **NextJs的路由系统遵循了约定大于配置的元素**，每个路由文件下可以包含如下的文件：
 
-![terminology](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041424917.avif)
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041424917.avif" alt="terminology" style="zoom:50%;" />
 
 文件介绍：
 
@@ -89,7 +89,7 @@ children props是layout的一个参数，它接收一个React元素, 该元素�
 
 layout组件也可以嵌套，例如：
 
-![nest-layout](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041431791.avif)
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041431791.avif" alt="nest-layout" style="zoom:50%;" />
 
 app作为最外层的layout，嵌套了dashboard的子layout，dashboard的layout其实对应的就是app中的children。
 
@@ -120,7 +120,7 @@ loading.js 可以帮助你使用React Suspense创建一个组件, 当你在加�
 
 > 传统ssr渲染流程:
 
-![ssr-render-process](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041435602.avif)
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041435602.avif" alt="ssr-render-process" style="zoom:50%;" />
 
 传统的ssr渲染流程，当用户请求一个页面时，服务器会根据路由匹配到对应的组件，然后渲染该组件，最后将渲染后的html返回给用户。
 
@@ -132,7 +132,7 @@ loading.js 可以帮助你使用React Suspense创建一个组件, 当你在加�
 
 所谓的流式渲染，就是把一个组件拆分成多个小块，然后分块渲染。
 
-![ssr-rendering-with-streaming](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041435433.avif)
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202408041435433.avif" alt="ssr-rendering-with-streaming" style="zoom:50%;" />
 
 这样的话，当客户端请求页面时会优先展示静态内容，等到服务端异步数据加载完成并渲染成功后，客户端再继续渲染剩余的内容。
 
@@ -205,6 +205,834 @@ export default function Page({ params }) {
 | app/blog/[slug]/page.js | /blog/a     | `{ slug: 'a' }` |
 | app/blog/[slug]/page.js | /blog/b     | `{ slug: 'b' }` |
 | app/blog/[slug]/page.js | /blog/c     | `{ slug: 'c' }` |
+
+## 6.链接和导航
+
+Next.js 中有四种方式可以在路由之间导航：
+
+- 使用`<link>`组件
+- 使用`useRouter`钩子（客户端组件）
+- 使用`redirect`函数（服务器组件）
+- 使用原生`History API`
+
+### 6.1 link组件
+
+`<Link>`是一个内置组件，它扩展了 HTML`<a>`标签以提供路由之间的`prefetching`和客户端导航。这是 Next.js 中路由之间导航的主要和推荐方式。
+
+您可以通过从`next/link`导入，并将`href`prop 传递给组件来使用它：
+
+```tsx
+// app/page.tsx
+import Link from 'next/link'
+ 
+export default function Page() {
+  return <Link href="/dashboard">Dashboard</Link>
+}
+```
+
+### 6.2 useRouter Hook
+
+该`useRouter`钩子允许您以编程方式从客户端组件导入
+
+```tsx
+// app/page.tsx
+'use client'
+ 
+import { useRouter } from 'next/navigation'
+ 
+export default function Page() {
+  const router = useRouter()
+ 
+  return (
+    <button type="button" onClick={() => router.push('/dashboard')}>
+      Dashboard
+    </button>
+  )
+}
+```
+
+> **建议：**使用`<Link>`组件在路线之间导航，除非您对使用有特殊的要求`useRouter`。
+
+### 6.3 redirect
+
+对于服务器组件，使用`redirect`函数。
+
+```tsx
+// app/team/[id]/page.tsx
+import { redirect } from 'next/navigation'
+ 
+async function fetchTeam(id: string) {
+  const res = await fetch('https://...')
+  if (!res.ok) return undefined
+  return res.json()
+}
+ 
+export default async function Profile({ params }: { params: { id: string } }) {
+  const team = await fetchTeam(params.id)
+  if (!team) {
+    redirect('/login')
+  }
+ 
+  // ...
+}
+```
+
+> 注意：
+>
+> 1. `redirect`默认返回 307（临时重定向）状态代码。在服务器操作中使用时，它会返回 303（查看其他），这通常用于在 POST 请求后重定向到成功页面。
+> 2. `redirect`内部会引发错误，因此应该在`try/catch`块外部调用它。
+> 3. `redirect`可以在客户端组件中在渲染过程中调用，但不能在事件处理程序中调用。您可以改用`useRouter`钩子。
+> 4. `redirect`也接受绝对 URL 并可用于重定向到外部链接。
+> 5. 如果您想在渲染过程之前重定向，请使用[`next.config.js`](https://nextjs.org/docs/app/building-your-application/routing/redirecting#redirects-in-nextconfigjs)或中间件。
+
+### 6.4使用原生 History API
+
+Next.js 允许你使用原生`window.history.pushState`和`window.history.replaceState`无需重新加载页面即可更新浏览器历史记录堆栈的方法。
+
+pushState和replaceState调用与Next.js路由集成，在其中允许您与usePathname和useSearchParams进行同步。
+
+> 1.window.history.pushState
+
+使用它来向浏览器的历史记录堆栈添加新条目。用户可以导航回上一个状态。例如，要对产品列表进行排序：
+
+```tsx
+'use client'
+ 
+import { useSearchParams } from 'next/navigation'
+ 
+export default function SortProducts() {
+  const searchParams = useSearchParams()
+ 
+  function updateSorting(sortOrder: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('sort', sortOrder)
+    window.history.pushState(null, '', `?${params.toString()}`)
+  }
+ 
+  return (
+    <>
+      <button onClick={() => updateSorting('asc')}>Sort Ascending</button>
+      <button onClick={() => updateSorting('desc')}>Sort Descending</button>
+    </>
+  )
+}
+```
+
+> 2.window.history.replaceState
+
+使用它来替换浏览器历史记录堆栈上的当前条目。用户无法导航回先前的状态。例如，可以使用它来切换应用程序的区域设置。
+
+```tsx
+'use client'
+ 
+import { usePathname } from 'next/navigation'
+ 
+export function LocaleSwitcher() {
+  const pathname = usePathname()
+ 
+  function switchLocale(locale: string) {
+    // e.g. '/en/about' or '/fr/contact'
+    const newPath = `/${locale}${pathname}`
+    window.history.replaceState(null, '', newPath)
+  }
+ 
+  return (
+    <>
+      <button onClick={() => switchLocale('en')}>English</button>
+      <button onClick={() => switchLocale('fr')}>French</button>
+    </>
+  )
+}
+```
+
+### 6.5路由和导航的工作原理
+
+App Router 使用混合方法进行路由和导航。在服务器端，您的应用代码会根据路由段自动进行代码拆分。而在客户端，Next.js 预取并缓存路由段。这意味着，当用户导航到一个新的路由时，浏览器不会重新加载页面，只有变化的路由段会重新渲染，从而提高导航体验和性能。
+
+#### 1.代码分割
+
+代码分割可以将应用程序代码分成较小的包，供浏览器下载和执行。这样可以减少传输的数据量和每个请求的执行时间，提高性能。
+
+服务器组件可以根据路由段自动对应用程序代码进行代码分割。这意味着只有当前路由所需的代码在导航时会被加载。
+
+#### 2.Prefetching
+
+预取是一种在用户访问之前在后台预加载路由的方法。
+
+在 Next.js 中，有两种方式可以对路由进行预取：
+
+- “<Link>” 组件： 当用户的视口内出现路由时，它们会自动预取。预取会在页面首次加载或通过滚动而进入视口时发生。
+- router.prefetch()：可以使用 useRouter hook 来以编程方式预取路由。
+
+<Link> 的默认预取行为（即当未指定预取属性或将其设置为 null 时）取决于 loading.js 的使用方式。只有在组件的 rendered 
+
+"tree" 中，从共享布局开始，直到第一个 loading.js 文件之前的部分，会进行预取和缓存，缓存时间为30s。这降低了获取整个动态路
+
+由的成本，也意味着可以显示即时的加载状态，以提供更好的视觉反馈给用户。
+
+可以通过将预取属性设置为 false 来禁用预取。或者，可以通过将预取属性设置为 true 来预取超出加载边界的完整页面数据。
+
+> 注意：预取功能在开发中未启用，仅在生产中启用。
+
+#### 3.缓存
+
+Next.js有一个名为Router Cache的内存客户端缓存。当用户在应用程序中导航时，预取的路由片段和访问的路由的React Server Component Payload会存储在缓存中。
+
+这意味着在导航时，尽可能地重复使用缓存，而不是向服务器发出新请求——通过减少请求和传输的数据数量来提高性能。
+
+#### 4.部分渲染
+
+部分渲染意味着只有导航时发生变化的路线段才会在客户端重新渲染，并且任何共享的段都会被保留。
+
+例如，在两个兄弟路由之间导航时，/dashboard/settings 和 /dashboard/analytics，将呈现设置和分析页面，并保留共享的仪表板布局。
+
+![How partial rendering works](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409232336152.png)
+
+没有局部渲染，每次导航都会导致客户端对整个页面进行重新渲染。只渲染变化部分可以减少传输的数据量和执行时间，从而提高性能。
+
+#### 5.软导航
+
+浏览器在页面间进行导航时会执行“硬导航”。Next.js 应用程序路由器实现了页面间的“软导航”，只重绘发生改变的路由部分（部分渲染）。这使得在导航过程中客户端 React 状态得以保留。
+
+#### 6.后退和前进导航
+
+默认情况下，Next.js会在后退和前进导航时保持滚动位置，并在路由缓存中重新使用路由段。
+
+#### 7.pages/路由和app/之间的路由区别
+
+当从pages/逐步迁移到app/时，Next.js路由器将自动处理两者之间的硬导航。为了检测从pages/到app/的过渡，有一个客户端路由器过
+
+滤器，它利用了对app路由的概率检查，这可能偶尔会导致错误的结果。默认情况下，这种发生的情况应该非常罕见，因为我们将错误阳性的
+
+可能性配置为0.01%。可以通过next.config.js中的experimental.clientRouterFilterAllowedRate选项自定义该可能性。重要的
+
+是要注意，降低错误阳性率将增加生成的过滤器在客户端捆绑包中的大小。
+
+或者，如果您更喜欢完全禁用此处理并手动管理页面和应用程序之间的路由，在next.config.js文件中，您可以将
+
+experimental.clientRouterFilter设置为false。当禁用此功能时，默认情况下，页面中与应用程序路由重叠的任何动态路由不能正
+
+确导航。
+
+## 7.错误处理
+
+错误可以分为两类：预期错误和未捕获异常：
+
+- 将预期错误模型化为返回值：在服务器操作中，避免使用 try/catch 来处理预期错误。使用 useFormState 来管理这些错误，并将它们返回给客户端。
+
+- 对于意外错误，请使用错误边界：使用 error.tsx 和 global-error.tsx 文件实现错误边界来处理意外错误，并提供替代的用户界面。
+
+### 7.1预期错误
+
+预期错误是在应用程序的正常操作过程中可能发生的错误，例如来自服务器端表单验证或失败请求的错误。这些错误应该明确地处理并返回给
+
+客户端。
+
+**a.处理服务器操作的预期错误**
+
+使用useFormState钩子来管理服务器操作的状态，包括处理错误。这种方法避免了用于预期错误的try/catch块，这些错误应该被建模为
+
+返回值而不是抛出异常。
+
+```tsx
+// app/actions.ts
+'use server'
+ 
+import { redirect } from 'next/navigation'
+ 
+export async function createUser(prevState: any, formData: FormData) {
+  const res = await fetch('https://...')
+  const json = await res.json()
+ 
+  if (!res.ok) {
+    return { message: 'Please enter a valid email' }
+  }
+ 
+  redirect('/dashboard')
+}
+```
+
+然后，你可以将你的动作传递给useFormState钩子，并使用返回的状态来显示错误消息。
+
+```tsx
+// app/ui/signup.tsx
+'use client'
+ 
+import { useFormState } from 'react'
+import { createUser } from '@/app/actions'
+ 
+const initialState = {
+  message: '',
+}
+ 
+export function Signup() {
+  const [state, formAction] = useFormState(createUser, initialState)
+ 
+  return (
+    <form action={formAction}>
+      <label htmlFor="email">Email</label>
+      <input type="text" id="email" name="email" required />
+      {/* ... */}
+      <p aria-live="polite">{state?.message}</p>
+      <button>Sign up</button>
+    </form>
+  )
+}
+```
+
+> 了解：以上示例使用了React的useFormState钩子，它与Next.js应用路由一起捆绑。如果你正在使用React 19，应使用useActionState。
+
+您还可以使用返回的状态，从客户端组件显示一个toast消息。
+
+**b.处理服务器组件的预期错误**
+
+当在服务器组件内获取数据时，您可以使用响应来有条件地呈现错误消息或重定向。
+
+```tsx
+// app/page.tsx
+export default async function Page() {
+  const res = await fetch(`https://...`)
+  const data = await res.json()
+ 
+  if (!res.ok) {
+    return 'There was an error.'
+  }
+ 
+  return '...'
+}
+```
+
+### 7.2未捕获的异常
+
+未捕获异常是意外错误，表示在应用程序正常流程中不应发生的错误或问题。应该通过抛出错误来处理这些异常，然后由错误边界捕获。
+
+- 常见：使用error.js处理根布局下未捕获的错误。
+
+- 可选：使用嵌套的error.js文件（例如：app/dashboard/error.js）处理精确的未捕获错误。
+
+- 不常见：使用global-error.js处理根布局中的未捕获错误。
+
+**a.使用错误边界**
+
+Next.js 使用错误边界来处理未捕获的异常。错误边界会捕获其子组件中的错误，并显示备用的用户界面，而不是崩溃的组件树。
+
+在一个路由段内添加一个error.tsx文件，并导出一个React组件，从而创建一个错误边界:
+
+```tsx
+// app/dashboard/error.tsx
+'use client' // Error boundaries must be Client Components
+ 
+import { useEffect } from 'react'
+ 
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    // Log the error to an error reporting service
+    console.error(error)
+  }, [error])
+ 
+  return (
+    <div>
+      <h2>Something went wrong!</h2>
+      <button
+        onClick={
+          // Attempt to recover by trying to re-render the segment
+          () => reset()
+        }
+      >
+        Try again
+      </button>
+    </div>
+  )
+}
+```
+
+如果您希望错误传递到父级错误边界，您可以在渲染错误组件时抛出错误。
+
+**b.处理嵌套路由中的错误**
+
+错误会冒泡至最近的上级错误边界。这样可以通过在路由层次结构的不同级别上放置 error.tsx 文件来实现细粒度的错误处理。
+
+![Nested Error Component Hierarchy](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409240018581.png)
+
+**c.处理全局错误**
+
+尽管较少见，但在根布局中使用 app/global-error.js 可以处理错误，该文件位于根应用程序目录中，即使在使用国际化时也可以。全
+
+局错误 UI 必须定义自己的 <html> 和 <body> 标签，因为它在激活时替代了根布局或模板。
+
+```tsx
+// app/global-error.tsx
+'use client' // Error boundaries must be Client Components
+ 
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  return (
+    // global-error must include html and body tags
+    <html>
+      <body>
+        <h2>Something went wrong!</h2>
+        <button onClick={() => reset()}>Try again</button>
+      </body>
+    </html>
+  )
+}
+```
+
+## 8.加载 UI 和流式传输
+
+特殊文件 loading.js 可以帮助你使用 React Suspense 创建有意义的加载界面。通过这个约定，你可以在路由段加载内容时显示即时
+
+的加载状态。一旦渲染完成，新的内容将会自动替换进来。
+
+![Loading UI](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409240038939.png)
+
+### 8.1即时加载状态
+
+一个即时加载状态是在导航过程中立即显示的备用用户界面。您可以预先渲染加载指示器，例如骨架屏和旋转图标，或者是未来屏幕的一个小
+
+但有意义的部分，例如封面照片、标题等。这可以帮助用户理解应用正在响应，并提供更好的用户体验。
+
+通过在文件夹内添加loading.js文件来创建一个加载状态:
+
+![loading.js 特殊文件](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409240040326.png)
+
+```tsx
+// app/dashboard/loading.tsx
+export default function Loading() {
+  // You can add any UI inside Loading, including a Skeleton.
+  return <LoadingSkeleton />
+}
+```
+
+在同一个文件夹中，loading.js 将被嵌套在 layout.js 中。它将自动将 page.js 文件和其下的任何子元素包装在 <Suspense> 边界中。
+
+![loading.js overview](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409240040864.png)
+
+注意：
+
+- [即使采用以服务器为中心的路由](https://nextjs.org/docs/app/building-your-application/routing/linking-and-navigating#how-routing-and-navigation-works)，导航也是即时的。
+
+- 导航可以中断，意味着在切换路线时不需要等待当前路线的内容完全加载就可以导航到另一条路线上。
+
+- 共享布局在加载新路段时仍然保持交互性。
+
+> 建议：在Next.js中使用loading.js约定来优化路由片段（布局和页面）的功能。
+
+### 8.2使用 Suspense 进行流式传输
+
+除了loading.js之外，您还可以手动为自己的UI组件创建暂停边界。应用程序路由器支持在Node.js和Edge运行时中使用暂停流技术。
+
+- 扩展：
+
+有些浏览器会缓冲流式响应。直到响应超过1024个字节，你才能看到流式响应。这通常只会影响“Hello World”类型的应用，而不会影响真实的应用程序。
+
+**a.什么是流媒体？**
+
+为了理解React和Next.js中的流媒体工作原理，了解服务器端渲染（SSR）及其限制是有帮助的。
+
+在SSR中，需要完成一系列步骤，用户才能看到并与页面进行交互：
+
+1. 首先，在服务器上获取给定页面的所有数据。
+2. 然后服务器渲染该页面的 HTML。
+3. 将页面的HTML、CSS和JavaScript发送到客户端。
+4. 使用生成的 HTML 和 CSS 显示非交互式用户界面。
+5. 最后，React使用户界面恢复活动状态，使其具有交互性。
+
+![Chart showing Server Rendering without Streaming](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409240046974.png)
+
+这些步骤是按顺序进行且具有阻塞性，这意味着只有在获取完所有数据后，服务器才能渲染页面的HTML。而且，在客户端中，只有在下载完
+
+页面中所有组件的代码后，才能补充 UI。
+
+React和Next.js进行服务器端渲染（SSR）有助于通过尽快向用户展示非交互式页面来提高加载性能的感知效果。
+
+![无流式传输的服务器渲染](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409240048825.png)
+
+然而，它仍然很慢，因为在向用户显示页面之前需要完成服务器上的所有数据提取。
+
+**通过流式传输，**您可以将页面的 HTML 分解为更小的块，然后逐步将这些块从服务器发送到客户端。
+
+![流式服务器渲染的工作原理](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409240048193.png)
+
+这使得页面的各个部分能够更快地显示，而无需等待所有数据加载后才能呈现任何 UI。
+
+流式传输与 React 的组件模型配合得很好，因为每个组件都可以被视为一个块。优先级较高的组件（例如产品信息）或不依赖数据的组件可以先发送（例如布局），React 可以更早地开始水化。优先级较低的组件（例如评论、相关产品）可以在其数据被获取后在同一服务器请求中发送。
+
+![图表展示了服务器流式渲染](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202409240049112.png)
+
+当你想防止长数据请求阻止页面渲染时，流式传输特别有用，因为它可以减少[第一个字节的时间（TTFB）](https://web.dev/ttfb/)首次[内容绘制 (FCP)](https://web.dev/first-contentful-paint/). 它还有助于缩短[交互时间 (TTI)](https://developer.chrome.com/en/docs/lighthouse/performance/interactive/)，尤其是在速度较慢的设备上。
+
+**c.例子**
+
+`<Suspense>`其工作原理是包装一个执行异步操作（例如获取数据）的组件，在操作发生时显示后备 UI（例如骨架、微调器），然后在操作完成后交换组件。
+
+```tsx
+// app/dashboard/page.tsx
+import { Suspense } from 'react'
+import { PostFeed, Weather } from './Components'
+ 
+export default function Posts() {
+  return (
+    <section>
+      <Suspense fallback={<p>Loading feed...</p>}>
+        <PostFeed />
+      </Suspense>
+      <Suspense fallback={<p>Loading weather...</p>}>
+        <Weather />
+      </Suspense>
+    </section>
+  )
+}
+```
+
+通过使用Suspense，你可以获得以下好处：
+- 流式服务器渲染： 从服务器逐步将 HTML 渲染到客户端。
+- 选择性水合：React根据用户交互的优先级来确定哪些组件首先进行交互。
+
+**d.SEO**
+
+- Next.js 将等待内部数据提取[`generateMetadata`](https://nextjs.org/docs/app/api-reference/functions/generate-metadata)完成后再将 UI 流式传输到客户端。这可确保流式响应的第一部分包含`<head>`标签。
+- 由于流媒体是服务器呈现的，因此不会影响 SEO。您可以使用谷歌的Rich Results测试工具查看您的页面在谷歌网络爬虫中的呈现方式，并查看序列化的HTML源代码。
+
+**e.状态码**
+
+在流媒体时，如果请求成功，服务器会返回200状态码来表示成功。
+
+服务器仍然可以通过流式内容本身与客户端通信错误或问题，例如在使用重定向或未找到页面时。由于响应头已发送到客户端，因此无法更新响应的状态代码。这不会影响搜索引擎优化（SEO）。
+
+## 9.重定向
+
+## 10.路由组
+
+## 11.项目结构
+
+## 12.动态路由
+
+## 13.静态路由
+
+## 14.拦截路由
+
+## 15.路由处理程序
+
+## 16.中间件
+
+## 17.国际化
+
+# 数据获取
+
+## 1.数据获取和缓存
+
+以下是 Next.js 中数据获取的一个简单示例：
+
+```tsx
+// app/page.tsx
+export default async function Page() {
+  let data = await fetch('https://api.vercel.app/blog')
+  let posts = await data.json()
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+该示例演示了如何在异步React服务器组件中使用fetch API进行基本的服务器端数据获取。
+
+### 1.1示例
+
+#### 1.1.1使用fetch API获取服务器上的数据:
+
+这个组件会获取并展示一系列博客文章。从 fetch 收到的响应将被自动缓存。
+
+```tsx
+// app/page.tsx
+export default async function Page() {
+  let data = await fetch('https://api.vercel.app/blog')
+  let posts = await data.json()
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+如果在此路由中没有使用任何动态函数，它将在下一次构建时被预先渲染为静态页面。数据可以使用增量静态再生成进行更新。
+
+如果您*不想*缓存来自的响应`fetch`，您可以执行以下操作：
+
+```tsx
+let data = await fetch('https://api.vercel.app/blog', { cache: 'no-store' })
+```
+
+#### 1.1.2使用 ORM 或数据库在服务器上获取数据
+
+该组件将获取并显示博客文章列表。默认情况下不会缓存来自数据库的响应，但可以通过其他配置进行缓存。
+
+```tsx
+// app/page.tsx
+import { db, posts } from '@/lib/db'
+ 
+export default async function Page() {
+  let allPosts = await db.select().from(posts)
+  return (
+    <ul>
+      {allPosts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+为了防止页面预渲染，您可以将以下内容添加到文件中：
+
+```tsx
+export const dynamic = 'force-dynamic'
+```
+
+但是，您通常会使用 cookies()、headers() 等函数，或从页面 props 读取传入的 searchParams，这将自动使页面动态渲染。在这种情况下，您不需要*明确*使用`force-dynamic`。
+
+#### 1.1.3在客户端获取数据
+
+> 我们建议首先尝试在服务器端获取数据。
+
+但是，在某些情况下，客户端数据获取仍然有意义。在这些情况下，您可以手动调用`fetch`（`useEffect`不推荐），或者依靠社区中流行的 React 库（例如[SWR](https://swr.vercel.app/)或[React Query](https://tanstack.com/query/latest)) 供客户端获取。
+
+```tsx
+// app/page.tsx
+'use client'
+ 
+import { useState, useEffect } from 'react'
+ 
+export function Posts() {
+  const [posts, setPosts] = useState(null)
+ 
+  useEffect(() => {
+    async function fetchPosts() {
+      let res = await fetch('https://api.vercel.app/blog')
+      let data = await res.json()
+      setPosts(data)
+    }
+    fetchPosts()
+  }, [])
+ 
+  if (!posts) return <div>Loading...</div>
+ 
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+#### 1.1.4使用 ORM 或数据库缓存数据
+
+您可以使用`unstable_cache`API 来缓存响应，以允许页面在运行时进行预渲染`next build`。
+
+```tsx
+// app/page.tsx
+import { unstable_cache } from 'next/cache'
+import { db, posts } from '@/lib/db'
+ 
+const getPosts = unstable_cache(
+  async () => {
+    return await db.select().from(posts)
+  },
+  ['posts'],
+  { revalidate: 3600, tags: ['posts'] }
+)
+ 
+export default async function Page() {
+  const allPosts = await getPosts()
+ 
+  return (
+    <ul>
+      {allPosts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+此示例将数据库查询结果缓存 1 小时（3600 秒）。它还添加了缓存标签，然后可以使用[增量静态再生](https://nextjs.org/docs/app/building-your-application/data-fetching/incremental-static-regeneration)`posts`使该标签失效。
+
+#### 1.1.5在多个函数中重复使用数据
+
+Next.js 使用类似的 API `generateMetadata`，`generateStaticParams`您需要在其中使用在 中提取的相同数据`page`。
+
+如果您使用`fetch`，请求将自动[被记住](https://nextjs.org/docs/app/building-your-application/caching#request-memoization)。这意味着您可以安全地使用相同的选项调用相同的 URL，并且只会发出一个请求。
+
+```tsx
+// app/page.tsx
+import { notFound } from 'next/navigation'
+ 
+interface Post {
+  id: string
+  title: string
+  content: string
+}
+ 
+async function getPost(id: string) {
+  let res = await fetch(`https://api.vercel.app/blog/${id}`)
+  let post: Post = await res.json()
+  if (!post) notFound()
+  return post
+}
+ 
+export async function generateStaticParams() {
+  let posts = await fetch('https://api.vercel.app/blog').then((res) =>
+    res.json()
+  )
+ 
+  return posts.map((post: Post) => ({
+    id: post.id,
+  }))
+}
+ 
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  let post = await getPost(params.id)
+ 
+  return {
+    title: post.title,
+  }
+}
+ 
+export default async function Page({ params }: { params: { id: string } }) {
+  let post = await getPost(params.id)
+ 
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <p>{post.content}</p>
+    </article>
+  )
+}
+```
+
+如果您*不*使用`fetch`，而是直接使用 ORM 或数据库，则可以使用 React`cache`函数包装数据获取。这将删除重复数据并仅进行一次查询。
+
+```tsx
+import { cache } from 'react'
+import { db, posts, eq } from '@/lib/db' // Example with Drizzle ORM
+import { notFound } from 'next/navigation'
+ 
+export const getPost = cache(async (id) => {
+  const post = await db.query.posts.findFirst({
+    where: eq(posts.id, parseInt(id)),
+  })
+ 
+  if (!post) notFound()
+  return post
+})
+```
+
+### 1.2模式
+
+#### 1.2.1并行和顺序数据获取
+
+在组件内部获取数据时，您需要了解两种数据获取模式：并行和顺序。
+
+![Sequential and Parallel Data Fetching](https://nextjs.org/_next/image?url=%2Fdocs%2Fdark%2Fsequential-parallel-data-fetching.png&w=3840&q=75)
+
+- **顺序性**：组件树中的请求相互依赖。这可能会导致更长的加载时间。
+- **并行**：路由中的请求会立即发起，并同时加载数据。这减少了加载数据所需的总时间。
+
+> 1.顺序数据获取
+
+如果您有嵌套组件，并且每个组件都获取自己的数据，那么如果这些数据请求没有被记忆，数据获取将按顺序进行。
+
+在某些情况下，您可能需要这种模式，因为一个提取依赖于另一个提取的结果。例如，组件仅在完成数据提取`Playlists`后才开始提取数据，因为取决于prop：`Artist``Playlists``artistID`
+
+```tsx
+// app/artist/[username]/page.tsx
+export default async function Page({
+  params: { username },
+}: {
+  params: { username: string }
+}) {
+  // Get artist information
+  const artist = await getArtist(username)
+ 
+  return (
+    <>
+      <h1>{artist.name}</h1>
+      {/* Show fallback UI while the Playlists component is loading */}
+      <Suspense fallback={<div>Loading...</div>}>
+        {/* Pass the artist ID to the Playlists component */}
+        <Playlists artistID={artist.id} />
+      </Suspense>
+    </>
+  )
+}
+ 
+async function Playlists({ artistID }: { artistID: string }) {
+  // Use the artist ID to fetch playlists
+  const playlists = await getArtistPlaylists(artistID)
+ 
+  return (
+    <ul>
+      {playlists.map((playlist) => (
+        <li key={playlist.id}>{playlist.name}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+
+
+
+
+
+
+### 1.3预加载数据
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 2.服务器操作
+
+## 3.增量更新
 
 # 样式
 
@@ -522,16 +1350,50 @@ window.addEventListener('resize', setFontSize);
 
 ## 1.服务端组件
 
-next.js 提供了服务端组件，它允许你在服务端渲染组件, 而不依赖与浏览器环境。服务端组件可以分为两种模式：
+### 1.1 服务端渲染的优势
 
-- 静态渲染
-- 动态渲染
+在服务器上进行渲染工作有几个好处，包括：
 
-1. 静态渲染
+- **数据获取**：服务器组件允许您将数据获取移至更靠近数据源的服务器。这可以减少获取渲染所需数据的时间以及客户端需要发出的请求数量，从而提高性能。
+- **安全性**：服务器组件允许您将敏感数据和逻辑（例如令牌和 API 密钥）保存在服务器上，而不会有将其暴露给客户端的风险。
+- **缓存**：通过在服务器上渲染，结果可以被缓存并在后续请求和跨用户中重复使用。这可以通过减少每个请求的渲染和数据获取量来提高性能并降低成本。
+- **性能**：服务器组件为您提供了额外的工具，可从基线优化性能。例如，如果您开始使用完全由客户端组件组成的应用，则将 UI 的非交互式部分移至服务器组件可以减少所需的客户端 JavaScript 数量。这对于网速较慢或设备性能较差的用户来说非常有利，因为浏览器需要下载、解析和执行的客户端 JavaScript 更少。
+- **初始页面加载和首次内容绘制（FCP）**：在服务器上，我们可以生成 HTML 以允许用户立即查看页面，而无需等待客户端下载、解析和执行呈现页面所需的 JavaScript。
+- **搜索引擎优化和社交网络可共享性**：搜索引擎机器人可以使用呈现的 HTML 来索引您的页面，社交网络机器人可以使用呈现的 HTML 为您的页面生成社交卡预览。
+- **流式传输**：服务器组件允许您将渲染工作拆分为多个块，并在准备就绪时将其流式传输到客户端。这样，用户就可以提前看到页面的各个部分，而不必等待整个页面在服务器上渲染完成。
+
+### 1.2服务端组件如何呈现的
+
+在服务器上，Next.js 使用 React 的 API 来协调渲染。渲染工作被分成几个部分：按单个路由段和[Suspense Boundaries]。
+
+每个块的渲染分为两个步骤：
+
+1. React 将服务器组件渲染为一种特殊的数据格式，称为**React 服务器组件负载（RSC Payload）**。
+2. Next.js 使用 RSC Payload 和客户端组件 JavaScript 指令在服务器上呈现**HTML 。**
+
+然后，在客户端上：
+
+1. HTML 用于立即显示路线的快速非交互式预览 - 这仅适用于初始页面加载。
+2. React Server Components Payload 用于协调客户端和服务器组件树，并更新 DOM。
+3. JavaScript 指令用于[水合](https://react.dev/reference/react-dom/client/hydrateRoot)客户端组件并使应用程序具有交互性。
+
+> 什么是 React 服务器组件有效负载 (RSC)？
+>
+> RSC Payload 是渲染的 React Server Components 树的紧凑二进制表示。React 在客户端使用它来更新浏览器的 DOM。RSC Payload 包含：
+>
+> - 服务器组件的渲染结果
+> - 客户端组件应呈现的位置的占位符以及对其 JavaScript 文件的引用
+> - 从服务器组件传递到客户端组件的任何 props
+
+### 1.3服务器渲染策略
+
+服务器渲染有三个子集：静态、动态和流式。
+
+> **静态渲染（默认）**
 
 默认情况下，所有服务端组件都是静态渲染的。 使用静态渲染时，next.js会将渲染结果缓存起来，并可以推送到CDN、redis等缓存中，以提高性能。
 
-2. 动态渲染
+> **动态渲染**
 
 所谓的动态渲染其实就是在渲染之前进行了数据请求，或者使用到了next.js的server api, 比如：
 
@@ -542,20 +1404,52 @@ next.js 提供了服务端组件，它允许你在服务端渲染组件, 而不�
 
 由于这些数据是运行时才能获取到的，并不能在编译阶段获取，所以这些数据没办法被静态缓存。
 
-3. 服务端渲染的优势
+**切换到动态渲染**
 
-- 缓存：在服务器端渲染的结果获取请求的数据，都可以缓存并在后续请求和用户之间重复使用。这可以通过复用重复的请求和渲染结果来提高性能。
-- bundle的大小，由于服务端组件不需要使用浏览器api，也就是没有额外的js文件，所以bundle的大小会小很多。
-- seo：服务端组件会将数据渲染到html中，所以可以更好的被搜索引擎收录。
-- 流式渲染：服务器组件允许你将内容拆分为多个块，并在渲染完成之后将它们流式传输到客户端。这其实就是允许用户更早地看到页面的某些部分，而不必等待整个页面在服务器上呈现。
+在渲染过程中，如果发现动态函数或未缓存的数据请求，Next.js 将切换到动态渲染整个路由。下表总结了动态函数和数据缓存如何影响路由是静态渲染还是动态渲染：
 
-4. 避免使用浏览器api
+| 动态函数 | 数据   | 路线     |
+| -------- | ------ | -------- |
+| 不       | 已缓存 | 静态渲染 |
+| 是的     | 已缓存 | 动态渲染 |
+| 不       | 未缓存 | 动态渲染 |
+| 是的     | 未缓存 | 动态渲染 |
+
+在上表中，要使路由完全静态，必须缓存所有数据。但是，您可以拥有一个使用缓存和非缓存数据提取的动态呈现路由。
+
+作为开发人员，您无需在静态渲染和动态渲染之间做出选择，因为 Next.js 会根据所使用的功能和 API 自动为每条路由选择最佳渲染策略。相反，您可以选择何时缓存或重新验证特定数据，并且您可以选择流式传输UI 的各个部分。
+
+**动态函数**
+
+动态函数依赖于只能在请求时知道的信息，例如用户的 Cookie、当前请求标头或 URL 的搜索参数。在 Next.js 中，这些动态 API 包括：
+
+- [`cookies()`](https://nextjs.org/docs/app/api-reference/functions/cookies)
+- [`headers()`](https://nextjs.org/docs/app/api-reference/functions/headers)
+- [`unstable_noStore()`](https://nextjs.org/docs/app/api-reference/functions/unstable_noStore)
+- [`unstable_after()`](https://nextjs.org/docs/app/api-reference/functions/unstable_after)：
+- [`searchParams`支柱](https://nextjs.org/docs/app/api-reference/file-conventions/page#searchparams-optional)
+
+使用其中任何一项功能都会在请求时将整个路线选择为动态渲染。
+
+### 1.4流媒体
+
+![该图显示了流式传输过程中路线段的并行化，显示了各个块的数据获取、渲染和水化。](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202410062335843.png)
+
+流式传输可让您从服务器逐步渲染UI。工作被拆分成多个块，并在准备就绪时流式传输到客户端。这样，用户就可以在整个内容渲染完成之前立即看到页面的某些部分。
+
+![图表显示了客户端上部分呈现的页面，并加载正在流式传输的块的 UI。](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202410062336153.png)
+
+默认情况下，流式传输内置于 Next.js 应用路由器中。这有助于改善初始页面加载性能，以及依赖于较慢数据提取的 UI，因为较慢的数据提取会阻止渲染整个路由。例如，产品页面上的评论。
+
+您可以使用React Suspense`loading.js`中的 UI 组件开始流式传输路线段。
+
+### 1.5避免使用浏览器api
 
 虽然next.js支持组件在服务端进行渲染，但是如果你在服务端组件中使用了浏览器api，那么会导致服务端组件无法正常渲染。
 
 这一点在开发中很容易被忽略，各位小伙伴可以多注意一下。
 
-5. use server
+### 1.6use server
 
 next.js默认就是server component，但是并不会在编写代码时提示错误使用api的风险。为了避免我们使用浏览器api，next.js提供了use server关键字，它可以帮助我们检测到不安全的api使用。
 
@@ -574,23 +1468,20 @@ export default function Home() {
 
 ## 2.客户端组件
 
-客户端组件允许您在服务器上编写可交互的 UI，并可以使用浏览器api.
+客户端组件允许您在服务器上编写可交互的 UI，并可以使用浏览器api。
 
-1. 服务端渲染的特点
+### 2.1客户端渲染优势
 
-- 交互性：客户端组件可以使用useState、useEffect等 React Hook。
-- 浏览器 API：客户端组件可以访问浏览器 API，例如 window、document 等。
-- hydrate：由于服务端渲染的组件是静态的，因此在客户端渲染时，还需要加载js文件，使得组件能够与进行交互。
+- **交互性**：客户端组件可以使用state、effects和事件监听器，这意味着它们可以向用户提供即时反馈并更新 UI。
+- **浏览器 API**：客户端组件可以访问浏览器 API，例如geolocation或localStorage。
 
-2. use client
+### 2.2在next中使用客户端组件
 
-"use client" 用于声明当前组件为客户端组件。
+要使用客户端组件，您可以添加`"use client"`指令在文件最顶部，在导入内容之上。
 
-在服务端组件中，你可以使用react/client相关的的api, 同时你也可以使用浏览器 api。
+`"use client"`用于声明服务器和客户端组件模块之间的边界`"use client"`。这意味着，通过在文件中定义，导入到其中的所有其他模块（包括子组件）都被视为客户端包的一部分。
 
-但是， "use client" 的文件中所有的模块都会被打包进 bundle 中。因此，我们应该尽可能地减少客户端组件的使用，进而减少bundle的体积。
-
-```jsx
+```tsx
 'use client'
 import { useState } from 'react'
  
@@ -606,15 +1497,66 @@ export default function Counter() {
 }
 ```
 
-3. 避免嵌套服务端组件
+下面的图表显示，如果没有定义"use client"指令，那么在嵌套组件（toggle.js）中使用onClick和useState将会引发错误。这是因为，默认情况下，App Router中的所有组件都是服务器组件，这些API是不可用的。通过在toggle.js中定义"use client"指令，你可以告诉React进入客户端边界，这样这些API就可用了。
+
+![Use Client Directive and Network Boundary](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202410062351924.png)
+
+> 使用建议：
+>
+> 您可以在React组件树中定义多个“use client”入口点。这使您可以将应用程序拆分为多个客户端捆绑包。
+>
+> 然而，不需要在需要在客户端渲染的每个组件中定义“use client”。一旦定义了边界，所有子组件和模块都被视为客户端捆绑包的一部分。
+
+### 2.3客户端组件如何渲染
+
+在Next.js中，客户端组件的渲染方式取决于请求是属于完整页面加载（即首次访问应用程序或由浏览器刷新触发的页面重新加载）还是后续导航。
+
+> **整页加载**
+
+为了优化初始页面加载，Next.js将使用React的API在服务器上渲染静态的HTML预览，用于客户端和服务器端组件。这意味着当用户首次访问您的应用程序时，他们将立即看到页面的内容，而无需等待客户端下载、解析和执行客户端组件的JavaScript包。
+
+在服务器端：
+
+1. React将服务器组件渲染为一种特殊的数据格式，称为React服务器组件有效载荷（RSC Payload），其中包含对客户端组件的引用。
+2. Next.js使用RSC有效载荷和客户端组件的JavaScript指令，在服务器上渲染路由的HTML。
+
+然后，在客户端：
+
+1. 使用HTML来立即显示路由的快速非交互式初始预览。
+2. 使用React服务器组件有效载荷来协调客户端和服务器组件树，并更新DOM。
+3. 使用JavaScript指令来hydrate客户端组件并使其用户界面交互。
+
+> 什么是hydration？
+>
+> Hydration是将事件监听器附加到DOM上，使静态HTML变得交互的过程。在幕后，通过使用hydrateRoot React API来完成hydration的操作。
+
+> **后续导航**
+
+在后续的导航中，客户端组件完全在客户端上渲染，而不是服务器上渲染的HTML。
+
+这意味着客户端组件的JavaScript捆绑包被下载并解析。一旦捆绑包准备就绪，React将使用RSC Payload来协调客户端和服务器组件树，并更新DOM。
+
+### 2.4回到服务器环境
+
+有时，在声明了“使用客户端”边界后，你可能想返回到服务器环境。例如，你可能想减小客户端捆绑文件大小，在服务器上获取数据，或使
+
+用仅在服务器上可用的API。
+
+即使在理论上嵌套在客户端组件内，你仍可以在服务器上保留代码，通过交错使用客户端和服务器组件以及服务器操作。更多信息请参阅组合
+
+模式页面。
+
+### 2.5避免嵌套服务端组件
 
 客户端组件中是禁止嵌套服务端组件的，但是服务端组件中是可以嵌套客户端组件。
 
 ## 3.混合组件模式
 
-在构建 next.js 应用程序时，您需要区分代码应该编造在服务端还是客户端。
+在构建React应用程序时，您需要考虑应该在服务器端或客户端呈现应用程序的哪些部分。本页面介绍了在使用服务器端和客户端组件时的一些推荐组合模式。
 
-1. 服务端组件和客户端组件的使用时机
+### 3.1服务端组件和客户端组件的使用时机
+
+以下是服务器和客户端组件的不同使用情况的简要总结：
 
 | 场景                       | 服务端 | 客户端 |
 | :------------------------- | :----- | :----- |
@@ -814,6 +1756,8 @@ export default function Dashboard() {
 | onLoad   | function |         | false    | 加载完成回调函数                                             |
 | onReady  | function |         | false    | 加载完成回调函数                                             |
 | onError  | function |         | false    | 加载失败回调函数                                             |
+
+# API
 
 # 客户端API
 
@@ -1920,6 +2864,44 @@ CMD [ "npm", "run", "start"]
 3. 查看日志：`docker logs -f my-next-app`
 
 4. 查看容器：`docker ps`
+
+
+
+# 日志
+
+## 日志等级
+
+- Log：通用日志，按需进行记录（打印）
+- Warning：警告日志，比如：尝试多次进行数据库操作
+- Error：严重日志，比如：数据库异常
+- Debug：调试日志，比如：加载数据日志
+- Verbose：详细日志，所有的操作与详细信息（非必要不打印）
+
+## 日志按照功能分类
+
+- 错误日志：方便定位问题，给用户友好的提示
+- 调试日志：方便开发
+- 请求日志：记录敏感行为
+
+## 日志记录位置
+
+- 控制台日志：方便监看（调试用）
+- 文件日志：方便回溯与追踪（24小时滚动）
+- 数据库日志：敏感操作，敏感数据记录
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,0 +1,24 @@
+/node_modules
+/npm-debug.log*
+/yarn-error.log
+/yarn.lock
+
+# production
+/dist
+/*_dist
+
+# misc
+.DS_Store
+.vscode
+.idea
+.cursor
+.vitepress/cache
+
+# umi
+/src/.umi
+/src/.umi-production
+/src/.umi-test
+/.env.local
+.idea/*
+.vscode
+./scripts/
