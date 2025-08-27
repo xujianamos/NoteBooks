@@ -900,7 +900,7 @@ print("Java" in set2)  # True
 
 集合的二元运算主要指集合的交集、并集、差集、对称差等运算，这些运算可以通过运算符来实现，也可以通过集合类型的方法来实现，代码如下所示。
 
-![](image/image_F2_VIe45sO.png)
+![](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202508280010904.png)
 
 ```python 
 set1 = {1, 2, 3, 4, 5, 6, 7}
@@ -1246,7 +1246,7 @@ print(stocks2)
 
 Python 中可以使用`def`关键字来定义函数，和变量一样每个函数也应该有一个漂亮的名字，命名规则跟变量的命名规则是一样的。在函数名后面的圆括号中可以设置函数的参数，也就是我们刚才说的函数的自变量，而函数执行完成后，我们会通过`return`关键字来返回函数的执行结果，这就是我们刚才说的函数的因变量。如果函数中没有`return`语句，那么函数会返回代表空值的`None`。另外，函数也可以没有自变量（参数），但是函数名后面的圆括号是必须有的。
 
-![](image/image_x3vwmJDrJk.png)
+![](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202508280010817.png)
 
 ```python 
 """
