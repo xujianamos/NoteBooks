@@ -12,20 +12,47 @@ function sortByFileNameAsc(a, b) {
   return a.localeCompare(b, "zh-Hans-CN");
 }
 
-function readMarkdownItemsFromDir(absoluteDir, baseLinkPrefix) {
+function readSidebarGroupFromDir(absoluteDir, baseLinkPrefix) {
   if (!fs.existsSync(absoluteDir)) return [];
-  const fileNames = fs
-    .readdirSync(absoluteDir)
-    .filter((name) => isMarkdownFile(name))
+  const dirents = fs
+    .readdirSync(absoluteDir, { withFileTypes: true })
+    .filter((d) => !d.name.startsWith("."));
+
+  const files = dirents
+    .filter((d) => d.isFile() && isMarkdownFile(d.name))
+    .map((d) => d.name)
     .sort(sortByFileNameAsc);
 
-  return fileNames.map((file) => {
+  const subdirs = dirents
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .sort(sortByFileNameAsc);
+
+  const items = [];
+
+  // files at current level
+  for (const file of files) {
     const text = path.basename(file, ".md");
     const link = path.posix
       .join("/", baseLinkPrefix, text === "index" ? "" : text)
       .replace(/\\\\/g, "/");
-    return { text, link };
-  });
+    items.push({ text, link });
+  }
+
+  // nested directories as collapsible groups
+  for (const dir of subdirs) {
+    const groupText = path.basename(dir);
+    const childAbs = path.join(absoluteDir, dir);
+    const childPrefix = path.posix
+      .join(baseLinkPrefix, dir)
+      .replace(/\\\\/g, "/");
+    const childItems = readSidebarGroupFromDir(childAbs, childPrefix);
+    if (childItems.length > 0) {
+      items.push({ text: groupText, collapsed: false, items: childItems });
+    }
+  }
+
+  return items;
 }
 
 function generateSidebarFromTopDirs(topDirs) {
@@ -41,7 +68,7 @@ function generateSidebarFromTopDirs(topDirs) {
       continue;
     }
 
-    const items = readMarkdownItemsFromDir(absoluteDir, dir);
+    const items = readSidebarGroupFromDir(absoluteDir, dir);
     if (items.length === 0) continue;
 
     sidebar.push({ text: path.basename(dir), items });
