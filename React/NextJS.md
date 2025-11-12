@@ -2279,21 +2279,1469 @@ export const getItem = cache(async (id: string) => {
 })
 ```
 
-
-
 # 8.更新数据
+
+你可以使用 React 的 Server Functions 在 Next.js 中更新数据。
+
+**Server Function** 是在服务器上运行的异步函数。它们可以通过网络请求从客户端调用，这就是为什么它们必须是异步的。
+
+在 `action` 或变更上下文中，它们也被称为 **Server Actions**。
+
+按照惯例，Server Action 是与 `startTransition` 一起使用的异步函数。当函数满足以下条件时，这会自动发生：
+
+- 使用 `action` prop 传递给 `<form>`。
+- 使用 `formAction` prop 传递给 `<button>`。
+
+在 Next.js 中，Server Actions 与框架的缓存架构集成。当调用一个 action 时，Next.js 可以在单个服务器往返中返回更新的 UI 和新数据。
+
+在幕后，actions 使用 `POST` 方法，并且只有这个 HTTP 方法可以调用它们。
+
+## 8.1 创建 Server Functions
+
+可以使用 `use server` 指令来定义 Server Function。你可以将指令放在**异步**函数的顶部以将函数标记为 Server Function，或放在单独文件的顶部以标记该文件的所有导出。
+
+`app/lib/actions.ts:`
+
+```tsx
+export async function createPost(formData: FormData) {
+  'use server'
+  const title = formData.get('title')
+  const content = formData.get('content')
+ 
+  // 更新数据
+  // 重新验证缓存
+}
+ 
+export async function deletePost(formData: FormData) {
+  'use server'
+  const id = formData.get('id')
+ 
+  // 更新数据
+  // 重新验证缓存
+}
+```
+
+### 8.1.1 Server Components
+
+可以通过在函数体顶部添加 `"use server"` 指令，在 Server Components 中内联 Server Functions：
+
+`app/page.tsx:`
+
+```tsx
+export default function Page() {
+  // Server Action
+  async function createPost(formData: FormData) {
+    'use server'
+    // ...
+  }
+ 
+  return <></>
+}
+```
+
+> **值得注意的是**： Server Components 默认支持渐进增强，这意味着即使 JavaScript 尚未加载或被禁用，调用 Server Actions 的表单也会被提交。
+
+### 8.1.2 Client Components
+
+无法在 Client Components 中定义 Server Functions。但是，你可以通过从顶部带有 `"use server"` 指令的文件中导入它们，在 Client Components 中调用它们：
+
+`app/actions.ts:`
+
+```tsx
+'use server'
+ 
+export async function createPost() {}
+```
+
+`app/ui/button.tsx:`
+
+```tsx
+'use client'
+ 
+import { createPost } from '@/app/actions'
+ 
+export function Button() {
+  return <button formAction={createPost}>Create</button>
+}
+```
+
+> **值得注意的是**： 在 Client Components 中，如果 JavaScript 尚未加载，调用 Server Actions 的表单将排队提交，并将优先进行水合。水合后，浏览器不会在表单提交时刷新。
+
+### 8.1.3 将 actions 作为 props 传递
+
+你还可以将 action 作为 prop 传递给 Client Component：
+
+```tsx
+<ClientComponent updateItemAction={updateItem} />
+```
+
+`app/client-component.tsx:`
+
+```tsx
+'use client'
+ 
+export default function ClientComponent({
+  updateItemAction,
+}: {
+  updateItemAction: (formData: FormData) => void
+}) {
+  return <form action={updateItemAction}>{/* ... */}</form>
+}
+```
+
+## 8.2 调用 Server Functions
+
+有两种主要方式可以调用 Server Function：
+
+1. Server 和 Client Components 中的表单
+2. Client Components 中的事件处理程序和 useEffect
+
+> **值得注意的是**： Server Functions 是为服务器端变更而设计的。客户端目前一次调度并等待一个。这是一个实现细节，可能会改变。如果你需要并行数据获取，请在 Server Components 中使用数据获取，或在单个 Server Function 或 Route Handler 内执行并行工作。
+
+### 8.2.1 表单
+
+React 扩展了 HTML `<form>` 元素，允许使用 HTML `action` prop 调用 Server Function。
+
+当在表单中调用时，函数会自动接收 [`FormData`](https://developer.mozilla.org/docs/Web/API/FormData/FormData) 对象。你可以使用原生 `FormData` 方法提取数据：
+
+`app/ui/form.tsx:`
+
+```tsx
+import { createPost } from '@/app/actions'
+ 
+export function Form() {
+  return (
+    <form action={createPost}>
+      <input type="text" name="title" />
+      <input type="text" name="content" />
+      <button type="submit">Create</button>
+    </form>
+  )
+}
+```
+
+`app/actions.ts:`
+
+```tsx
+'use server'
+ 
+export async function createPost(formData: FormData) {
+  const title = formData.get('title')
+  const content = formData.get('content')
+ 
+  // 更新数据
+  // 重新验证缓存
+}
+```
+
+### 8.2.2 事件处理程序
+
+你可以在 Client Component 中使用事件处理程序（如 `onClick`）来调用 Server Function。
+
+`app/like-button.tsx:`
+
+```tsx
+'use client'
+ 
+import { incrementLike } from './actions'
+import { useState } from 'react'
+ 
+export default function LikeButton({ initialLikes }: { initialLikes: number }) {
+  const [likes, setLikes] = useState(initialLikes)
+ 
+  return (
+    <>
+      <p>Total Likes: {likes}</p>
+      <button
+        onClick={async () => {
+          const updatedLikes = await incrementLike()
+          setLikes(updatedLikes)
+        }}
+      >
+        Like
+      </button>
+    </>
+  )
+}
+```
+
+## 8.3 示例
+
+### 8.3.1 显示待处理状态
+
+在执行 Server Function 时，你可以使用 React 的 [`useActionState`](https://react.dev/reference/react/useActionState) hook 显示加载指示器。该 hook 返回一个 `pending` 布尔值：
+
+`app/ui/button.tsx:`
+
+```tsx
+'use client'
+ 
+import { useActionState, startTransition } from 'react'
+import { createPost } from '@/app/actions'
+import { LoadingSpinner } from '@/app/ui/loading-spinner'
+ 
+export function Button() {
+  const [state, action, pending] = useActionState(createPost, false)
+ 
+  return (
+    <button onClick={() => startTransition(action)}>
+      {pending ? <LoadingSpinner /> : 'Create Post'}
+    </button>
+  )
+}
+```
+
+### 8.3.2 重新验证
+
+在执行更新后，你可以通过在 Server Function 中调用 [`revalidatePath`](https://nextjscn.org/docs/app/api-reference/functions/revalidatePath) 或 [`revalidateTag`](https://nextjscn.org/docs/app/api-reference/functions/revalidateTag) 来重新验证 Next.js 缓存并显示更新的数据：
+
+`app/lib/actions.ts:`
+
+```tsx
+import { revalidatePath } from 'next/cache'
+ 
+export async function createPost(formData: FormData) {
+  'use server'
+  // 更新数据
+  // ...
+ 
+  revalidatePath('/posts')
+}
+```
+
+### 8.3.3 重定向
+
+你可能希望在执行更新后将用户重定向到不同的页面。你可以通过在 Server Function 中调用 [`redirect`](https://nextjscn.org/docs/app/api-reference/functions/redirect) 来实现。
+
+`app/lib/actions.ts:`
+
+```tsx
+'use server'
+ 
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+ 
+export async function createPost(formData: FormData) {
+  // 更新数据
+  // ...
+ 
+  revalidatePath('/posts')
+  redirect('/posts')
+}
+```
+
+调用 `redirect` 会抛出一个框架处理的控制流异常。之后的任何代码都不会执行。如果你需要新鲜数据，请提前调用 [`revalidatePath`](https://nextjscn.org/docs/app/api-reference/functions/revalidatePath) 或 [`revalidateTag`](https://nextjscn.org/docs/app/api-reference/functions/revalidateTag)。
+
+### 8.3.4 Cookies
+
+你可以使用 [`cookies`](https://nextjscn.org/docs/app/api-reference/functions/cookies) API 在 Server Action 中 `get`、`set` 和 `delete` cookies。
+
+当你在 Server Action 中设置或删除 cookie 时，Next.js 会在服务器上重新渲染当前页面及其布局，以便 **UI 反映新的 cookie 值**。
+
+> **值得注意的是**： 服务器更新应用于当前 React 树，根据需要重新渲染、挂载或卸载组件。重新渲染的组件会保留客户端状态，如果依赖项发生变化，effects 会重新运行。
+
+`app/actions.ts:`
+
+```tsx
+'use server'
+ 
+import { cookies } from 'next/headers'
+ 
+export async function exampleAction() {
+  const cookieStore = await cookies()
+ 
+  // 获取 cookie
+  cookieStore.get('name')?.value
+ 
+  // 设置 cookie
+  cookieStore.set('name', 'Delba')
+ 
+  // 删除 cookie
+  cookieStore.delete('name')
+}
+```
+
+### 8.3.5 useEffect
+
+你可以使用 React [`useEffect`](https://react.dev/reference/react/useEffect) hook 在组件挂载或依赖项更改时调用 Server Action。这对于依赖全局事件或需要自动触发的变更非常有用。例如，应用快捷键的 `onKeyDown`、用于无限滚动的交叉观察器 hook，或者当组件挂载时更新查看次数：
+
+`app/view-count.tsx:`
+
+```tsx
+'use client'
+ 
+import { incrementViews } from './actions'
+import { useState, useEffect, useTransition } from 'react'
+ 
+export default function ViewCount({ initialViews }: { initialViews: number }) {
+  const [views, setViews] = useState(initialViews)
+  const [isPending, startTransition] = useTransition()
+ 
+  useEffect(() => {
+    startTransition(async () => {
+      const updatedViews = await incrementViews()
+      setViews(updatedViews)
+    })
+  }, [])
+ 
+  // 你可以使用 `isPending` 向用户提供反馈
+  return <p>Total Views: {views}</p>
+}
+```
 
 # 9.缓存和重新验证
 
-# 错误处理
+缓存是一种存储数据获取和其他计算结果的技术，这样对相同数据的未来请求可以更快地提供服务，而无需再次执行相同的工作。而重新验证允许你更新缓存条目，而无需重新构建整个应用程序。
 
-css
+## 9.1 `fetch`
 
-图像优化
+默认情况下，[`fetch`](https://nextjscn.org/docs/app/api-reference/functions/fetch) 请求不会被缓存。你可以通过将 `cache` 选项设置为 `'force-cache'` 来缓存单个请求。
 
-字体优化
+`app/page.tsx:`
 
-元数据和 OG 图像
+```tsx
+export default async function Page() {
+  const data = await fetch('https://...', { cache: 'force-cache' })
+}
+```
 
-路由处理程序
+> **值得注意的是**：虽然 `fetch` 请求默认不会被缓存，但 Next.js 会[预渲染](https://nextjscn.org/docs/app/guides/caching#static-rendering)包含 `fetch` 请求的路由并缓存 HTML。如果你想确保路由是[动态的](https://nextjscn.org/docs/app/guides/caching#dynamic-rendering)，请使用 [`connection` API](https://nextjscn.org/docs/app/api-reference/functions/connection)。
 
+要重新验证 `fetch` 请求返回的数据，你可以使用 `next.revalidate` 选项。
+
+```tsx
+// app/page.tsx
+export default async function Page() {
+  const data = await fetch('https://...', { next: { revalidate: 3600 } })
+}
+```
+
+这将在指定的秒数后重新验证数据。
+
+## 9.2 `unstable_cache`
+
+`unstable_cache` 允许你缓存数据库查询和其他异步函数的结果。要使用它，请用 `unstable_cache` 包装函数。例如：
+
+```tsx
+// app/lib/data.ts
+import { db } from '@/lib/db'
+export async function getUserById(id: string) {
+  return db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .then((res) => res[0])
+}
+```
+
+```tsx
+// app/page.tsx
+import { unstable_cache } from 'next/cache'
+import { getUserById } from '@/app/lib/data'
+ 
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ userId: string }>
+}) {
+  const { userId } = await params
+ 
+  const getCachedUser = unstable_cache(
+    async () => {
+      return getUserById(userId)
+    },
+    [userId] // 将用户 ID 添加到缓存键中
+  )
+}
+```
+
+该函数接受第三个可选对象来定义缓存应如何重新验证。它接受：
+
+- `tags`：Next.js 用于重新验证缓存的标签数组。
+- `revalidate`：缓存应重新验证的秒数。
+
+```tsx
+const getCachedUser = unstable_cache(
+  async () => {
+    return getUserById(userId)
+  },
+  [userId],
+  {
+    tags: ['user'],
+    revalidate: 3600,
+  }
+)
+```
+
+## 9.3 `revalidateTag`
+
+`revalidateTag` 用于根据标签和事件重新验证缓存条目。该函数现在支持两种行为：
+
+- **使用 `profile="max"`**：使用 stale-while-revalidate 语义，在后台获取新内容的同时提供过期内容
+- **不使用第二个参数**：立即使缓存过期的旧行为（已弃用）
+
+要与 `fetch` 一起使用，首先使用 `next.tags` 选项标记函数：
+
+```tsx
+// app/lib/data.ts
+export async function getUserById(id: string) {
+  const data = await fetch(`https://...`, {
+    next: {
+      tags: ['user'],
+    },
+  })
+}
+```
+
+或者，你可以使用 `tags` 选项标记 `unstable_cache` 函数：
+
+```tsx
+// app/lib/data.ts
+export const getUserById = unstable_cache(
+  async (id: string) => {
+    return db.query.users.findFirst({ where: eq(users.id, id) })
+  },
+  ['user'], // 如果变量未作为参数传递，则需要
+  {
+    tags: ['user'],
+  }
+)
+```
+
+然后，在 [Route Handler](https://nextjscn.org/docs/app/api-reference/file-conventions/route) 或 Server Action 中调用 `revalidateTag`：
+
+```tsx
+// app/lib/actions.ts
+import { revalidateTag } from 'next/cache'
+ 
+export async function updateUser(id: string) {
+  // 修改数据
+  revalidateTag('user', 'max') // 推荐：使用 stale-while-revalidate
+}
+```
+
+你可以在多个函数中重用相同的标签，以便一次性重新验证它们
+
+## 9.4 `revalidatePath`
+
+`revalidatePath` 用于在事件发生后重新验证路由。要使用它，在 [Route Handler](https://nextjscn.org/docs/app/api-reference/file-conventions/route) 或 Server Action 中调用它：
+
+```tsx
+//app/lib/actions.ts
+import { revalidatePath } from 'next/cache'
+ 
+export async function updateUser(id: string) {
+  // 修改数据
+  revalidatePath('/profile')
+```
+
+## 9.5 `updateTag`
+
+`updateTag` 专为 Server Actions 设计，用于在读取自己写入的场景中立即使缓存数据过期。与 `revalidateTag` 不同，它只能在 Server Actions 中使用，并且会立即使缓存条目过期。
+
+```tsx
+// app/lib/actions.ts
+import { updateTag } from 'next/cache'
+import { redirect } from 'next/navigation'
+ 
+export async function createPost(formData: FormData) {
+  // 在数据库中创建文章
+  const post = await db.post.create({
+    data: {
+      title: formData.get('title'),
+      content: formData.get('content'),
+    },
+  })
+ 
+  // 立即使缓存过期，以便新文章可见
+  updateTag('posts')
+  updateTag(`post-${post.id}`)
+ 
+  redirect(`/posts/${post.id}`)
+}
+```
+
+`revalidateTag` 和 `updateTag` 之间的主要区别：
+
+- **`updateTag`**：仅在 Server Actions 中使用，立即使缓存过期，用于读取自己写入的场景
+- **`revalidateTag`**：在 Server Actions 和 Route Handlers 中使用，支持使用 `profile="max"` 的 stale-while-revalidate
+
+# 10.错误处理
+
+错误可以分为两类：[预期错误](https://nextjscn.org/docs/app/getting-started/error-handling#handling-expected-errors)和[未捕获的异常](https://nextjscn.org/docs/app/getting-started/error-handling#handling-uncaught-exceptions)。
+
+## 10.1 处理预期错误
+
+预期错误是指在应用程序正常运行过程中可能发生的错误，例如来自服务端表单验证或失败的请求。这些错误应该被明确处理并返回给客户端。
+
+### 10.1.1 Server Functions
+
+你可以使用 [`useActionState`](https://react.dev/reference/react/useActionState) hook 来处理 Server Functions 中的预期错误。
+
+对于这些错误，避免使用 `try`/`catch` 块和抛出错误。相反，将预期错误建模为返回值。
+
+```tsx
+// app/actions.ts
+'use server'
+ 
+export async function createPost(prevState: any, formData: FormData) {
+  const title = formData.get('title')
+  const content = formData.get('content')
+ 
+  const res = await fetch('https://api.vercel.app/posts', {
+    method: 'POST',
+    body: { title, content },
+  })
+  const json = await res.json()
+ 
+  if (!res.ok) {
+    return { message: '创建文章失败' }
+  }
+}
+```
+
+你可以将你的 action 传递给 `useActionState` hook，并使用返回的 `state` 来显示错误消息。
+
+```tsx
+// app/ui/form.tsx
+'use client'
+ 
+import { useActionState } from 'react'
+import { createPost } from '@/app/actions'
+ 
+const initialState = {
+  message: '',
+}
+ 
+export function Form() {
+  const [state, formAction, pending] = useActionState(createPost, initialState)
+ 
+  return (
+    <form action={formAction}>
+      <label htmlFor="title">标题</label>
+      <input type="text" id="title" name="title" required />
+      <label htmlFor="content">内容</label>
+      <textarea id="content" name="content" required />
+      {state?.message && <p aria-live="polite">{state.message}</p>}
+      <button disabled={pending}>创建文章</button>
+    </form>
+  )
+}
+```
+
+### 10.1.2 Server Components
+
+在 Server Component 内部获取数据时，你可以使用响应来有条件地渲染错误消息或 [`redirect`](https://nextjscn.org/docs/app/api-reference/functions/redirect)。
+
+```tsx
+// app/page.tsx
+export default async function Page() {
+  const res = await fetch(`https://...`)
+  const data = await res.json()
+ 
+  if (!res.ok) {
+    return '发生了一个错误。'
+  }
+ 
+  return '...'
+}
+```
+
+### 10.1.3 Not found
+
+你可以在路由段内调用 [`notFound`](https://nextjscn.org/docs/app/api-reference/functions/not-found) 函数，并使用 [`not-found.js`](https://nextjscn.org/docs/app/api-reference/file-conventions/not-found) 文件来显示 404 UI。
+
+```tsx
+// app/blog/[slug]/page.tsx
+import { getPostBySlug } from '@/lib/posts'
+ 
+export default async function Page({ params }: { params: { slug: string } }) {
+  const { slug } = await params
+  const post = getPostBySlug(slug)
+ 
+  if (!post) {
+    notFound()
+  }
+ 
+  return <div>{post.title}</div>
+}
+```
+
+```tsx
+// app/blog/[slug]/not-found.tsx
+export default function NotFound() {
+  return <div>404 - 页面未找到</div>
+}
+```
+
+## 10.2 处理未捕获的异常
+
+未捕获的异常是指示 bug 或问题的意外错误，这些错误不应在应用程序的正常流程中发生。这些应该通过抛出错误来处理，然后由错误边界捕获。
+
+### 10.2.1 嵌套错误边界
+
+Next.js 使用错误边界来处理未捕获的异常。错误边界捕获其子组件中的错误，并显示回退 UI，而不是崩溃的组件树。
+
+通过在路由段内添加 [`error.js`](https://nextjscn.org/docs/app/api-reference/file-conventions/error) 文件并导出一个 React 组件来创建错误边界：
+
+```tsx
+// app/dashboard/error.tsx
+'use client' // 错误边界必须是客户端组件
+ 
+import { useEffect } from 'react'
+ 
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    // 将错误记录到错误报告服务
+    console.error(error)
+  }, [error])
+ 
+  return (
+    <div>
+      <h2>出错了！</h2>
+      <button
+        onClick={
+          // 尝试通过重新渲染段来恢复
+          () => reset()
+        }
+      >
+        重试
+      </button>
+    </div>
+  )
+}
+```
+
+错误将冒泡到最近的父错误边界。这允许通过在路由层次结构的不同级别放置 `error.tsx` 文件来实现精细的错误处理。
+
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202511110034580.png" alt="嵌套错误组件层次结构" style="zoom:50%;" />
+
+错误边界不会捕获事件处理程序内部的错误。它们旨在捕获[渲染期间](https://react.dev/reference/react/Component#static-getderivedstatefromerror)的错误，以显示**回退 UI**，而不是使整个应用程序崩溃。
+
+一般来说，事件处理程序或异步代码中的错误不会被错误边界处理，因为它们在渲染之后运行。
+
+要处理这些情况，手动捕获错误并使用 `useState` 或 `useReducer` 存储它，然后更新 UI 以通知用户。
+
+```tsx
+'use client'
+ 
+import { useState } from 'react'
+ 
+export function Button() {
+  const [error, setError] = useState(null)
+ 
+  const handleClick = () => {
+    try {
+      // 做一些可能失败的工作
+      throw new Error('异常')
+    } catch (reason) {
+      setError(reason)
+    }
+  }
+ 
+  if (error) {
+    /* 渲染回退 UI */
+  }
+ 
+  return (
+    <button type="button" onClick={handleClick}>
+      点击我
+    </button>
+  )
+}
+```
+
+> 注意，来自 `useTransition` 的 `startTransition` 内部的未处理错误将冒泡到最近的错误边界。
+
+```tsx
+'use client'
+ 
+import { useTransition } from 'react'
+ 
+export function Button() {
+  const [pending, startTransition] = useTransition()
+ 
+  const handleClick = () =>
+    startTransition(() => {
+      throw new Error('异常')
+    })
+ 
+  return (
+    <button type="button" onClick={handleClick}>
+      点击我
+    </button>
+  )
+}
+```
+
+### 10.2.2 全局错误
+
+虽然不太常见，但你可以使用位于根应用程序目录中的 [`global-error.js`](https://nextjscn.org/docs/app/api-reference/file-conventions/error#global-error) 文件来处理根布局中的错误，即使在利用国际化时也是如此。全局错误 UI 必须定义自己的 `<html>` 和 `<body>` 标签，因为它在激活时会替换根布局或模板。
+
+```tsx
+// app/global-error.tsx
+'use client' // 错误边界必须是客户端组件
+ 
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  return (
+    // global-error 必须包含 html 和 body 标签
+    <html>
+      <body>
+        <h2>出错了！</h2>
+        <button onClick={() => reset()}>重试</button>
+      </body>
+    </html>
+  )
+}
+```
+
+# 11. css
+
+## 11.1 Tailwind CSS
+
+`Tailwind CSS` 是一个实用优先的 CSS 框架，提供了低级别的实用类来构建自定义设计。
+
+安装 Tailwind CSS：
+
+```bash
+npm install -D tailwindcss @tailwindcss/postcss
+```
+
+将 PostCSS 插件添加到你的 `postcss.config.mjs` 文件中：
+
+```ts
+// postcss.config.mjs
+export default {
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
+}
+```
+
+在全局 CSS 文件中导入 Tailwind：
+
+```css
+/* app/globals.css*/
+@import 'tailwindcss';
+```
+
+在根布局中导入 CSS 文件：
+
+```tsx
+// app/layout.tsx
+import './globals.css'
+ 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+现在你可以开始在应用中使用 Tailwind 的实用类了：
+
+```tsx
+// app/page.tsx
+export default function Page() {
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      <h1 className="text-4xl font-bold">Welcome to Next.js!</h1>
+    </main>
+  )
+}
+```
+
+> **值得注意的是**： 如果你需要对非常旧的浏览器提供更广泛的支持，请参阅 [Tailwind CSS v3 设置说明](https://nextjscn.org/docs/app/guides/tailwind-v3-css)。
+
+## 11.2 CSS Modules
+
+CSS Modules 通过生成唯一的类名来局部作用域化 CSS。这使你可以在不同文件中使用相同的类名而不用担心命名冲突。
+
+要开始使用 CSS Modules，创建一个扩展名为 `.module.css` 的新文件，并将其导入到 `app` 目录内的任何组件中：
+
+```css
+/*app/blog/blog.module.css*/
+.blog {
+  padding: 24px;
+}
+```
+
+```tsx
+// app/blog/page.tsx
+import styles from './blog.module.css'
+ 
+export default function Page() {
+  return <main className={styles.blog}></main>
+}
+```
+
+## 11.3 Global CSS
+
+你可以使用全局 CSS 在整个应用中应用样式。
+
+创建一个 `app/global.css` 文件并在根布局中导入它，以将样式应用到应用中的**每个路由**：
+
+```css
+/*app/global.css*/
+body {
+  padding: 20px 20px 60px;
+  max-width: 680px;
+  margin: 0 auto;
+}
+```
+
+```tsx
+// app/layout.tsx
+// 这些样式应用于应用中的每个路由
+import './global.css'
+ 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+> **值得注意的是**： 全局样式可以导入到 `app` 目录内的任何布局、页面或组件中。然而，由于 Next.js 使用 React 内置的样式表支持来与 Suspense 集成，目前在路由之间导航时不会移除样式表，这可能导致冲突。我们建议对_真正_全局的 CSS（如 Tailwind 的基础样式）使用全局样式，对组件样式使用 [Tailwind CSS](https://nextjscn.org/docs/app/getting-started/css#tailwind-css)，并在需要时对自定义作用域 CSS 使用 [CSS Modules](https://nextjscn.org/docs/app/getting-started/css#css-modules)。
+
+## 11.4 External stylesheets
+
+外部包发布的样式表可以在 `app` 目录的任何地方导入，包括并置的组件：
+
+```tsx
+// app/layout.tsx
+import 'bootstrap/dist/css/bootstrap.css'
+ 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <body className="container">{children}</body>
+    </html>
+  )
+}
+```
+
+> **值得注意的是**： 在 React 19 中，也可以使用 `<link rel="stylesheet" href="..." />`。
+
+## 11.5 Ordering and Merging
+
+Next.js 在生产构建期间通过自动分块（合并）样式表来优化 CSS。**CSS 的顺序**取决于**你在代码中导入样式的顺序**。
+
+例如，`base-button.module.css` 将排在 `page.module.css` 之前，因为 `<BaseButton>` 在 `page.module.css` 之前导入：
+
+```tsx
+// page.tsx
+import { BaseButton } from './base-button'
+import styles from './page.module.css'
+ 
+export default function Page() {
+  return <BaseButton className={styles.primary} />
+}
+```
+
+```tsx
+// base-button.tsx
+import styles from './base-button.module.css'
+ 
+export function BaseButton() {
+  return <button className={styles.primary} />
+}
+```
+
+为了保持 CSS 顺序的可预测性：
+
+- 尝试将 CSS 导入限制在单个 JavaScript 或 TypeScript 入口文件中
+- 在应用的根部导入全局样式和 Tailwind 样式表。
+- **使用 Tailwind CSS** 满足大多数样式需求，因为它通过实用类涵盖了常见的设计模式。
+- 当 Tailwind 实用类不足时，使用 CSS Modules 处理组件特定的样式。
+- 为你的 CSS 模块使用一致的命名约定。例如，使用 `<name>.module.css` 而不是 `<name>.tsx`。
+- 将共享样式提取到共享组件中以避免重复导入。
+- 关闭自动排序导入的 linter 或格式化工具，如 ESLint 的 [`sort-imports`](https://eslint.org/docs/latest/rules/sort-imports)。
+- 你可以在 `next.config.js` 中使用 [`cssChunking`](https://nextjscn.org/docs/app/api-reference/config/next-config-js/cssChunking) 选项来控制 CSS 的分块方式。
+
+## 11.6 Development vs Production
+
+- 在开发模式（`next dev`）中，CSS 更新通过 [Fast Refresh](https://nextjscn.org/docs/architecture/fast-refresh) 即时应用。
+- 在生产模式（`next build`）中，所有 CSS 文件会自动连接成**多个经过压缩和代码分割的** `.css` 文件，确保为路由加载最少量的 CSS。
+- 在生产环境中，即使禁用 JavaScript，CSS 仍会加载，但在开发环境中需要 JavaScript 才能实现 Fast Refresh。
+- CSS 顺序在开发环境中的表现可能有所不同，始终确保检查构建（`next build`）以验证最终的 CSS 顺序。
+
+# 12. 图像优化
+
+Next.js 的 `<Image>` 组件扩展了 HTML `<img>` 元素，提供了以下功能：
+
+- **尺寸优化：** 使用 WebP 等现代图片格式，自动为每个设备提供正确尺寸的图片。
+- **视觉稳定性：** 在图片加载时自动防止[布局偏移](https://web.dev/articles/cls)。
+- **更快的页面加载：** 使用原生浏览器懒加载，仅在图片进入视口时加载，并可选模糊占位符。
+- **资源灵活性：** 按需调整图片大小，甚至可以调整存储在远程服务器上的图片。
+
+要开始使用 `<Image>`，从 `next/image` 导入它并在你的组件中渲染。
+
+```tsx
+// app/page.tsx
+import Image from 'next/image'
+ 
+export default function Page() {
+  return <Image src="" alt="" />
+}
+```
+
+> `src` 属性可以是[本地](https://nextjscn.org/docs/app/getting-started/images#local-images)或[远程](https://nextjscn.org/docs/app/getting-started/images#remote-images)图片。
+
+## 12.1 本地图片
+
+你可以在根目录下名为 [`public`](https://nextjscn.org/docs/app/api-reference/file-conventions/public-folder) 的文件夹中存储静态文件，如图片和字体。`public` 内的文件可以从基础 URL（`/`）开始被你的代码引用。
+
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202511120009041.png" alt="显示 app 和 public 文件夹的文件夹结构" style="zoom:50%;" />
+
+```tsx
+// app/page.tsx
+import Image from 'next/image'
+ 
+export default function Page() {
+  return (
+    <Image
+      src="/profile.png"
+      alt="作者的照片"
+      width={500}
+      height={500}
+    />
+  )
+}
+```
+
+如果图片是静态导入的，Next.js 将自动确定固有的 [`width`](https://nextjscn.org/docs/app/api-reference/components/image#width-and-height) 和 [`height`](https://nextjscn.org/docs/app/api-reference/components/image#width-and-height)。这些值用于确定图片比例，并在图片加载时防止[累积布局偏移](https://web.dev/articles/cls)。
+
+```tsx
+// app/page.tsx
+import Image from 'next/image'
+import ProfileImage from './profile.png'
+ 
+export default function Page() {
+  return (
+    <Image
+      src={ProfileImage}
+      alt="作者的照片"
+      // width={500} 自动提供
+      // height={500} 自动提供
+      // blurDataURL="data:..." 自动提供
+      // placeholder="blur" // 可选的加载时模糊效果
+    />
+  )
+}
+```
+
+## 12.2 远程图片
+
+要使用远程图片，你可以为 `src` 属性提供一个 URL 字符串。
+
+```tsx
+// app/page.tsx
+import Image from 'next/image'
+ 
+export default function Page() {
+  return (
+    <Image
+      src="https://s3.amazonaws.com/my-bucket/profile.png"
+      alt="作者的照片"
+      width={500}
+      height={500}
+    />
+  )
+}
+```
+
+由于 Next.js 在构建过程中无法访问远程文件，你需要手动提供 [`width`](https://nextjscn.org/docs/app/api-reference/components/image#width-and-height)、[`height`](https://nextjscn.org/docs/app/api-reference/components/image#width-and-height) 和可选的 [`blurDataURL`](https://nextjscn.org/docs/app/api-reference/components/image#blurdataurl) 属性。`width` 和 `height` 用于推断图片的正确宽高比，并避免图片加载时的布局偏移。或者，你可以使用 [`fill` 属性](https://nextjscn.org/docs/app/api-reference/components/image#fill)使图片填充父元素的大小。
+
+为了安全地允许来自远程服务器的图片，你需要在 [`next.config.js`](https://nextjscn.org/docs/app/api-reference/config/next-config-js) 中定义支持的 URL 模式列表。尽可能具体以防止恶意使用。例如，以下配置将仅允许来自特定 AWS S3 存储桶的图片：
+
+```ts
+// next.config.ts
+import type { NextConfig } from 'next'
+ 
+const config: NextConfig = {``
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 's3.amazonaws.com',
+        port: '',
+        pathname: '/my-bucket/**',
+        search: '',
+      },
+    ],
+  },
+}
+ 
+export default config
+```
+
+# 13.字体优化
+
+[`next/font`](https://nextjscn.org/docs/app/api-reference/components/font) 模块会自动优化你的字体，并移除外部网络请求以提升隐私保护和性能。
+
+它为任何字体文件提供**内置的自托管**功能。这意味着你可以无布局偏移地最优加载 Web 字体。
+
+要开始使用 `next/font`，从 [`next/font/local`](https://nextjscn.org/docs/app/getting-started/fonts#local-fonts) 或 [`next/font/google`](https://nextjscn.org/docs/app/getting-started/fonts#google-fonts) 导入它，使用适当的选项作为函数调用，并将 `className` 设置到你想要应用字体的元素上。例如：
+
+```tsx
+// app/layout.tsx
+import { Geist } from 'next/font/google'
+ 
+const geist = Geist({
+  subsets: ['latin'],
+})
+ 
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={geist.className}>
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+字体的作用域限定在使用它们的组件内。要将字体应用到整个应用程序，请将其添加到 `Root Layout`。
+
+## 13.1 Google 字体
+
+你可以自动自托管任何 Google 字体。字体会作为静态资源存储，并从与你的部署相同的域名提供服务，这意味着当用户访问你的网站时，浏览器不会向 Google 发送任何请求。
+
+要开始使用 Google 字体，从 `next/font/google` 导入你选择的字体：
+
+```tsx
+// app/layout.tsx
+import { Geist } from 'next/font/google'
+ 
+const geist = Geist({
+  subsets: ['latin'],
+})
+ 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" className={geist.className}>
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+我们建议使用[可变字体](https://fonts.google.com/variablefonts)以获得最佳性能和灵活性。但如果你无法使用可变字体，则需要指定字重：
+
+```tsx
+// app/layout.tsx
+import { Roboto } from 'next/font/google'
+ 
+const roboto = Roboto({
+  weight: '400',
+  subsets: ['latin'],
+})
+ 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" className={roboto.className}>
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+## 13.2 本地字体
+
+要使用本地字体，从 `next/font/local` 导入你的字体，并指定本地字体文件的 [`src`](https://nextjscn.org/docs/app/api-reference/components/font#src)。字体可以存储在 [`public`](https://nextjscn.org/docs/app/api-reference/file-conventions/public-folder) 文件夹中，或与 `app` 文件夹放在一起。例如：
+
+```tsx
+// app/layout.tsx
+import localFont from 'next/font/local'
+ 
+const myFont = localFont({
+  src: './my-font.woff2',
+})
+ 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" className={myFont.className}>
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+如果你想为单个字体系列使用多个文件，`src` 可以是一个数组：
+
+```tsx
+const roboto = localFont({
+  src: [
+    {
+      path: './Roboto-Regular.woff2',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: './Roboto-Italic.woff2',
+      weight: '400',
+      style: 'italic',
+    },
+    {
+      path: './Roboto-Bold.woff2',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: './Roboto-BoldItalic.woff2',
+      weight: '700',
+      style: 'italic',
+    },
+  ],
+})
+```
+
+# 14.元数据和 OG 图像
+
+Metadata API 可用于定义你的应用程序元数据，以改善 SEO 和网页可分享性，包括：
+
+1. 静态 `metadata` 对象
+2. 动态 `generateMetadata` 函数
+3. 特殊的文件约定，可用于添加静态或动态生成的 favicons 和 OG 图像。
+
+通过上述所有选项，Next.js 将自动为你的页面生成相关的 `<head>` 标签，可以在浏览器的开发者工具中检查。
+
+`metadata` 对象和 `generateMetadata` 函数导出仅在服务器组件中支持。
+
+## 14.1 默认字段
+
+有两个默认的 `meta` 标签始终会被添加，即使路由没有定义元数据：
+
+- meta charset 标签设置网站的字符编码。
+- meta viewport 标签设置网站的视口宽度和缩放比例，以适应不同的设备。
+
+```html
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+```
+
+其他元数据字段可以使用 `Metadata` 对象（用于静态元数据）或 `generateMetadata` 函数（用于生成的元数据）来定义。
+
+## 14.2 静态元数据
+
+要定义静态元数据，从静态的 [`layout.js`](https://nextjscn.org/docs/app/api-reference/file-conventions/layout) 或 [`page.js`](https://nextjscn.org/docs/app/api-reference/file-conventions/page) 文件中导出一个 [`Metadata` 对象](https://nextjscn.org/docs/app/api-reference/functions/generate-metadata#metadata-object)。例如，为博客路由添加标题和描述：
+
+```tsx
+// app/blog/layout.tsx
+import type { Metadata } from 'next'
+ 
+export const metadata: Metadata = {
+  title: 'My Blog',
+  description: '...',
+}
+ 
+export default function Layout() {}
+```
+
+你可以在 `generateMetadata` 文档中查看完整的可用选项列表。
+
+## 14.3 生成的元数据
+
+你可以使用 [`generateMetadata`](https://nextjscn.org/docs/app/api-reference/functions/generate-metadata) 函数来 `fetch` 依赖于数据的元数据。例如，为特定博客文章获取标题和描述：
+
+```tsx
+// app/blog/[slug]/page.tsx
+import type { Metadata, ResolvingMetadata } from 'next'
+ 
+type Props = {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+ 
+export async function generateMetadata(
+  { params, searchParams }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const slug = (await params).slug
+ 
+  // 获取文章信息
+  const post = await fetch(`https://api.vercel.app/blog/${slug}`).then((res) =>
+    res.json()
+  )
+ 
+  return {
+    title: post.title,
+    description: post.description,
+  }
+}
+ 
+export default function Page({ params, searchParams }: Props) {}
+```
+
+### 14.3.1 流式传输元数据
+
+对于动态渲染的页面，Next.js 会单独流式传输元数据，一旦 `generateMetadata` 解析完成就将其注入到 HTML 中，而不会阻塞 UI 渲染。
+
+流式传输元数据通过允许视觉内容首先流式传输来提高感知性能。
+
+对于期望元数据在 `<head>` 标签中的机器人和爬虫（例如 `Twitterbot`、`Slackbot`、`Bingbot`），流式传输元数据是**禁用的**。这些通过使用传入请求的 User Agent 头来检测。
+
+你可以在 Next.js 配置文件中使用 [`htmlLimitedBots`](https://nextjscn.org/docs/app/api-reference/config/next-config-js/htmlLimitedBots#disabling) 选项自定义或**完全禁用**流式传输元数据。
+
+静态渲染的页面不使用流式传输，因为元数据在构建时就已解析。
+
+### 14.3.2 记忆化数据请求
+
+在某些情况下，你可能需要为元数据和页面本身获取**相同**的数据。为了避免重复请求，你可以使用 React 的 [`cache` 函数](https://react.dev/reference/react/cache)来记忆化返回值，只获取一次数据。例如，为元数据和页面获取博客文章信息：
+
+```tsx
+// app/lib/data.ts
+import { cache } from 'react'
+import { db } from '@/app/lib/db'
+ 
+// getPost 将被使用两次，但只执行一次
+export const getPost = cache(async (slug: string) => {
+  const res = await db.query.posts.findFirst({ where: eq(posts.slug, slug) })
+  return res
+})
+```
+
+
+
+```tsx
+// app/blog/[slug]/page.tsx
+import { getPost } from '@/app/lib/data'
+ 
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string }
+}) {
+  const post = await getPost(params.slug)
+  return {
+    title: post.title,
+    description: post.description,
+  }
+}
+ 
+export default async function Page({ params }: { params: { slug: string } }) {
+  const post = await getPost(params.slug)
+  return <div>{post.title}</div>
+}
+```
+
+## 14.4 基于文件的元数据
+
+以下特殊文件可用于元数据：
+
+- favicon.ico、apple-icon.jpg 和 icon.jpg
+- opengraph-image.jpg 和 twitter-image.jpg
+- robots.txt
+- sitemap.xml
+
+你可以将这些用于静态元数据，或者可以使用代码以编程方式生成这些文件。
+
+## 14.5 Favicons
+
+Favicons 是在书签和搜索结果中代表你网站的小图标。要向你的应用程序添加 favicon，创建一个 `favicon.ico` 并将其添加到 app 文件夹的根目录。
+
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202511130006062.png" alt="Favicon Special File inside the App Folder with sibling layout and page files" style="zoom:50%;" />
+
+## 14.6 静态 Open Graph 图像
+
+Open Graph (OG) 图像是在社交媒体上代表你网站的图像。要向你的应用程序添加静态 OG 图像，在 app 文件夹的根目录创建一个 `opengraph-image.png` 文件。
+
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202511130007174.png" alt="OG image special file inside the App folder with sibling layout and page files" style="zoom:50%;" />
+
+你还可以通过在文件夹结构中更深的位置创建 `opengraph-image.png` 来为特定路由添加 OG 图像。例如，要创建特定于 `/blog` 路由的 OG 图像，在 `blog` 文件夹内添加一个 `opengraph-image.jpg` 文件。
+
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202511130008667.png" alt="OG image special file inside the blog folder" style="zoom:50%;" />
+
+更具体的图像将优先于文件夹结构中其上方的任何 OG 图像。
+
+> 也支持其他图像格式，如 `jpeg`、`png` 和 `gif`。
+
+## 14.7 生成的 Open Graph 图像
+
+[`ImageResponse` 构造函数](https://nextjscn.org/docs/app/api-reference/functions/image-response)允许你使用 JSX 和 CSS 生成动态图像。这对于依赖于数据的 OG 图像很有用。
+
+例如，要为每篇博客文章生成唯一的 OG 图像，在 `blog` 文件夹内添加一个 `opengraph-image.tsx` 文件，并从 `next/og` 导入 `ImageResponse` 构造函数：
+
+```tsx
+// app/blog/[slug]/opengraph-image.tsx
+import { ImageResponse } from 'next/og'
+import { getPost } from '@/app/lib/data'
+ 
+// 图像元数据
+export const size = {
+  width: 1200,
+  height: 630,
+}
+ 
+export const contentType = 'image/png'
+ 
+// 图像生成
+export default async function Image({ params }: { params: { slug: string } }) {
+  const post = await getPost(params.slug)
+ 
+  return new ImageResponse(
+    (
+      // ImageResponse JSX 元素
+      <div
+        style={{
+          fontSize: 128,
+          background: 'white',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {post.title}
+      </div>
+    )
+  )
+}
+```
+
+`ImageResponse` 支持常见的 CSS 属性，包括 flexbox 和绝对定位、自定义字体、文本换行、居中和嵌套图像。
+
+> **值得注意的是**：
+>
+> - 示例可在 [Vercel OG Playground](https://og-playground.vercel.app/) 中找到。
+> - `ImageResponse` 使用 [`@vercel/og`](https://vercel.com/docs/og-image-generation)、[`satori`](https://github.com/vercel/satori) 和 `resvg` 将 HTML 和 CSS 转换为 PNG。
+> - 仅支持 flexbox 和 CSS 属性的子集。高级布局（例如 `display: grid`）将不起作用。
+
+# 15.路由处理程序
+
+Route Handlers 允许你使用 Web [Request](https://developer.mozilla.org/docs/Web/API/Request) 和 [Response](https://developer.mozilla.org/docs/Web/API/Response) API 为给定路由创建自定义请求处理器。
+
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202511130011487.png" alt="Route.js Special File" style="zoom:50%;" />
+
+> **值得注意的是**：Route Handlers 仅在 `app` 目录内可用。它们相当于 `pages` 目录内的 [API Routes](https://nextjscn.org/docs/pages/building-your-application/routing/api-routes)，这意味着你**不**需要同时使用 API Routes 和 Route Handlers。
+
+## 15.1 约定
+
+Route Handlers 在 `app` 目录内的 [`route.js|ts` 文件](https://nextjscn.org/docs/app/api-reference/file-conventions/route)中定义：
+
+```ts
+// app/api/route.ts
+export async function GET(request: Request) {}
+```
+
+Route Handlers 可以嵌套在 `app` 目录内的任何位置，类似于 `page.js` 和 `layout.js`。但**不能**在与 `page.js` 相同的路由段级别上存在 `route.js` 文件。
+
+## 15.2 支持的 HTTP 方法
+
+支持以下 [HTTP 方法](https://developer.mozilla.org/docs/Web/HTTP/Methods)：`GET`、`POST`、`PUT`、`PATCH`、`DELETE`、`HEAD` 和 `OPTIONS`。如果调用了不支持的方法，Next.js 将返回 `405 Method Not Allowed` 响应。
+
+## 15.3 扩展的 `NextRequest` 和 `NextResponse` API
+
+除了支持原生的 [Request](https://developer.mozilla.org/docs/Web/API/Request) 和 [Response](https://developer.mozilla.org/docs/Web/API/Response) API 外，Next.js 还通过 [`NextRequest`](https://nextjscn.org/docs/app/api-reference/functions/next-request) 和 [`NextResponse`](https://nextjscn.org/docs/app/api-reference/functions/next-response) 对它们进行了扩展，为高级用例提供便捷的辅助函数。
+
+## 15.4 缓存
+
+Route Handlers 默认不会被缓存。但是，你可以选择对 `GET` 方法进行缓存。其他支持的 HTTP 方法**不会**被缓存。要缓存 `GET` 方法，请在你的 Route Handler 文件中使用[路由配置选项](https://nextjscn.org/docs/app/api-reference/file-conventions/route-segment-config#dynamic)，例如 `export const dynamic = 'force-static'`。
+
+```ts
+// app/items/route.ts
+export const dynamic = 'force-static'
+ 
+export async function GET() {
+  const res = await fetch('https://data.mongodb-api.com/...', {
+    headers: {
+      'Content-Type': 'application/json',
+      'API-Key': process.env.DATA_API_KEY,
+    },
+  })
+  const data = await res.json()
+ 
+  return Response.json({ data })
+}
+```
+
+> **值得注意的是**：其他支持的 HTTP 方法**不会**被缓存，即使它们与被缓存的 `GET` 方法放在同一个文件中。
+
+## 15.5 特殊的 Route Handlers
+
+特殊的 Route Handlers，如 [`sitemap.ts`](https://nextjscn.org/docs/app/api-reference/file-conventions/metadata/sitemap)、[`opengraph-image.tsx`](https://nextjscn.org/docs/app/api-reference/file-conventions/metadata/opengraph-image) 和 [`icon.tsx`](https://nextjscn.org/docs/app/api-reference/file-conventions/metadata/app-icons)，以及其他[元数据文件](https://nextjscn.org/docs/app/api-reference/file-conventions/metadata)，除非它们使用 Dynamic API 或动态配置选项，否则默认保持静态。
+
+## 15.6 路由解析
+
+你可以将 `route` 视为最底层的路由原语。
+
+- 它们**不**参与布局或客户端导航，如 `page`。
+- 在与 `page.js` 相同的路由上**不能**有 `route.js` 文件。
+
+| Page                 | Route              | Result |
+| -------------------- | ------------------ | ------ |
+| `app/page.js`        | `app/route.js`     | 冲突   |
+| `app/page.js`        | `app/api/route.js` | 有效   |
+| `app/[user]/page.js` | `app/api/route.js` | 有效   |
+
+每个 `route.js` 或 `page.js` 文件接管该路由的所有 HTTP 动词。
+
+```ts
+//app/page.ts
+export default function Page() {
+  return <h1>Hello, Next.js!</h1>
+}
+ 
+// 冲突
+// `app/route.ts`
+export async function POST(request: Request) {}
+```
+
+## 15.7 Route Context Helper
+
+在 TypeScript 中，你可以使用全局可用的 [`RouteContext`](https://nextjscn.org/docs/app/api-reference/file-conventions/route#route-context-helper) 辅助函数为 Route Handlers 的 `context` 参数添加类型：
+
+```ts
+// app/users/[id]/route.ts
+import type { NextRequest } from 'next/server'
+ 
+export async function GET(_req: NextRequest, ctx: RouteContext<'/users/[id]'>) {
+  const { id } = await ctx.params
+  return Response.json({ id })
+}
+```
+
+> **值得注意的是**
+>
+> - 类型在 `next dev`、`next build` 或 `next typegen` 期间生成。
