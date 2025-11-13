@@ -45,7 +45,9 @@ npm i next@latest react@latest react-dom@latest
 yarn add next@latest react@latest react-dom@latest
 ```
 
-> 值得注意的是：应用路由内置了 React Canary 版本，其中包含了 React 19 的所有稳定版本变更，以及框架中正在验证的新功能。页面路由则使用您在 package.json 中安装的 React 版本。
+> 值得注意的是：应用路由内置了 React Canary 版本，其中包含了 React 19 的所有稳定版本变更，以及框架中正在验证的新功能。
+>
+> 页面路由则使用您在 package.json 中安装的 React 版本。
 
 然后，将以下脚本添加到您的 package.json 文件中：
 
@@ -68,13 +70,13 @@ yarn add next@latest react@latest react-dom@latest
 - `next start`: 启动生产服务器。
 - `eslint`: Runs ESLint.
 
-Turbopack 现在是默认的打包工具。要使用 Webpack，请运行 `next dev --webpack` 或 `next build --webpack`。有关配置详情，请参阅 Turbopack 文档。
+`Turbopack` 现在是默认的打包工具。要使用 Webpack，请运行 `next dev --webpack` 或 `next build --webpack`。有关配置详情，请参阅 Turbopack 文档。
 
 ### 1.2.1 创建 app 目录
 
 Next.js 使用文件系统路由，这意味着应用程序中的路由取决于文件的结构方式。
 
-创建一个名为 app 的文件夹。然后在 app 文件夹内创建一个名为 layout.tsx 的文件。该文件是根布局文件，是必需的，并且必须包含 <html> 和 <body> 标签。
+创建一个名为 app 的文件夹。然后在 app 文件夹内创建一个名为 layout.tsx 的文件。该文件是根布局文件，是必需的，并且必须包含 `<html>` 和 `<body>` 标签。
 
 ```tsx
 // app/layout.tsx
@@ -113,7 +115,7 @@ export default function Page() {
 
 在项目根目录创建一个 public 文件夹，用于存储静态资源，例如图像、字体等。然后，代码可以从基本 URL (/) 开始引用 public 文件夹中的文件。
 
-然后，您可以使用根路径 (/) 引用这些资源。例如，public/profile.png 可以引用为 /profile.png：
+然后，您可以使用根路径 (/) 引用这些资源。例如，`public/profile.png` 可以引用为 `/profile.png`：
 
 ```tsx
 // app/page.tsx
@@ -134,11 +136,13 @@ export default function Page() {
 
 > 最低 TypeScript 版本要求：`v5.1.0`
 
-Next.js 内置了 TypeScript 支持。要将 TypeScript 添加到您的项目中，请将文件重命名为 .ts 或 .tsx，然后运行 `next dev` 命令。Next.js 将自动安装必要的依赖项，并添加一个包含推荐配置选项的 tsconfig.json 文件。
+Next.js 内置了 TypeScript 支持。要将 TypeScript 添加到您的项目中，请将文件重命名为 .ts 或 .tsx，然后运行 `next dev` 
+
+命令。Next.js 将自动安装必要的依赖项，并添加一个包含推荐配置选项的 `tsconfig.json` 文件。
 
 ## 1.5 设置绝对导入和模块路径别名
 
-Next.js 内置了对 tsconfig.json 和 jsconfig.json 文件中的“paths”和“baseUrl”选项的支持。
+Next.js 内置了对 tsconfig.json 和 jsconfig.json 文件中的`paths`和`baseUrl`选项的支持。
 
 这些选项允许您将项目目录别名化为绝对路径，从而简化模块导入过程，使其更加清晰易懂。例如：
 
