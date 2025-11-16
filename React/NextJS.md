@@ -192,14 +192,14 @@ import { Button } from '@/components/button'
 
 顶级文件夹用于组织应用程序的代码和静态资源。
 
-![Route segments to path segments](https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202511030041673.png)
+<img src="https://noteimagebuket.oss-cn-hangzhou.aliyuncs.com/typora/202511030041673.png" alt="Route segments to path segments" style="zoom:50%;" />
 
-|                                                              |                        |
-| ------------------------------------------------------------ | ---------------------- |
-| [`app`](https://nextjs.org/docs/app)                         | App Router             |
-| [`pages`](https://nextjs.org/docs/pages/building-your-application/routing) | Pages Router           |
-| `public`                                                     | 要提供的静态资源       |
-| `src`                                                        | 可选的应用程序源文件夹 |
+|          |                        |
+| -------- | ---------------------- |
+| `app`    | App Router             |
+| `pages`  | Pages Router           |
+| `public` | 要提供的静态资源       |
+| `src`    | 可选的应用程序源文件夹 |
 
 ### 2.1.2 顶层文件
 
