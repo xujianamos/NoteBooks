@@ -710,7 +710,7 @@ export default function Layout(props: LayoutProps<'/dashboard'>) {
 
 在 Next.js 中，布局(layout.js)和页面(page.js)默认是 `React Server Components`。在初始导航和后续导航中，`Server Component Payload` 在发送到客户端之前会在服务器上生成。
 
-服务器渲染有两种类型，基于*何时*发生：
+服务器渲染有两种类型，基于何时发生：
 
 - **静态渲染（或预渲染）**发生在构建时或重新验证期间，结果会被缓存。
 - **动态渲染**发生在请求时，响应客户端请求。
