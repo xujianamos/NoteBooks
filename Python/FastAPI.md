@@ -28,7 +28,7 @@ print(f"Hello {name} from Python")
 
 然后你可以调用这个 Python 程序：
 
-```bash 
+```shell
 # 这里我们还没有设置环境变量
 $ python main.py
 # 因为我们没有设置环境变量，所以我们得到的是默认值
@@ -48,7 +48,7 @@ $ Hello Wade Wilson from Python
 
 要实现这一点，只需在同一行内、程序本身之前创建它：
 
-```markdown 
+```shell
 # 在这个程序调用的同一行中创建一个名为 MY_NAME 的环境变量
 MY_NAME="Wade Wilson" python main.py
 # 现在就可以读取到环境变量了
@@ -64,9 +64,9 @@ python main.py
 
 ## 2.1 创建一个虚拟环境
 
-在开始一个 Python 工程的**第一时间**，**在你的工程内部**创建一个虚拟环境。
+在开始一个 Python 工程的第一时间，在你的工程内部创建一个虚拟环境。
 
-> 你只需要 **在每个工程中操作一次**，而不是每次工作时都操作。
+> 你只需要在每个工程中操作一次，而不是每次工作时都操作。
 
 如果你安装了`uv`，你也可以使用它来创建一个虚拟环境。
 
@@ -74,21 +74,19 @@ python main.py
 $ uv venv
 ```
 
-
-> 默认情况下，`uv` 会在一个名为 `.venv` 的目录中创建一个虚拟环境。但你可以通过传递一个额外的参数来自定义它，指定目录的名称。
+默认情况下，`uv` 会在一个名为 `.venv` 的目录中创建一个虚拟环境。但你可以通过传递一个额外的参数来自定义它，指定目录的名称。
 
 ## 2.2 激活虚拟环境
 
 激活新的虚拟环境来确保你运行的任何 Python 命令或安装的包都能使用到它。
 
-> **每次**开始一个 **新的终端会话** 来工作在这个工程时，你都需要执行这个操作。
+> 每次开始一个新的终端会话来工作在这个工程时，你都需要执行这个操作。
 
 ```bash 
 $ source .venv/bin/activate
 ```
 
-
-> 每次你在这个环境中安装一个 **新的包** 时，都需要 **重新激活** 这个环境。这么做确保了当你使用一个由这个包安装的 **终端（CLI）程序** 时，你使用的是你的虚拟环境中的程序，而不是全局安装、可能版本不同的程序。
+每次你在这个环境中安装一个新的包时，都需要重新激活这个环境。这么做确保了当你使用一个由这个包安装的终端（CLI）程序时，你使用的是你的虚拟环境中的程序，而不是全局安装、可能版本不同的程序。
 
 ## 2.3 检查虚拟环境是否激活
 
@@ -101,7 +99,7 @@ $ which python
 
 ## 2.4 退出虚拟环境
 
-当你完成工作后，你可以**退出**虚拟环境。
+当你完成工作后，你可以退出虚拟环境。
 
 ```bash 
 $ deactivate
@@ -118,12 +116,11 @@ $ deactivate
 pip install "fastapi[standard]"
 ```
 
-
-> 当您使用 `pip install "fastapi[standard]"` 进行安装时，它会附带一些默认的可选标准依赖项。如果您不想安装这些可选依赖，可以选择安装 `pip install fastapi`。
+当您使用 `pip install "fastapi[standard]"` 进行安装时，它会附带一些默认的可选标准依赖项。如果您不想安装这些可选依赖，可以选择安装 `pip install fastapi`。
 
 # 4. 快速入门
 
-最简单的 FastAPI 文件可能像下面这样：
+最简单的FastAPI文件可能像下面这样：
 
 ```python 
 from fastapi import FastAPI
@@ -135,7 +132,7 @@ async def root():
     return {"message": "Hello World"}
 ```
 
-交互式 API 文档:
+交互式API文档:
 
 跳转到 <http://127.0.0.1:8000/docs。你将会看到自动生成的交互式> API 文档（由 Swagger UI 提供）。
 
@@ -143,7 +140,7 @@ async def root():
 
 # 5. 路径参数
 
-FastAPI 支持使用 Python 字符串格式化语法声明**路径参数**（**变量**）：
+FastAPI 支持使用 Python 字符串格式化语法声明路径参数**（**变量）：
 
 ```python 
 from fastapi import FastAPI
@@ -173,11 +170,11 @@ async def read_item(item_id: int):
 ```
 
 
-> 注意，函数接收并返回的值是`3`（`int`），不是 `"3"`（`str`）。**FastAPI** 通过类型声明自动**解析**请求中的数据。
+> 注意，函数接收并返回的值是`3`（`int`），不是 `"3"`（`str`）。FastAPI通过类型声明**自动解析**请求中的数据。
 
 ## 5.2 顺序很重要
 
-有时，*路径操作*中的路径是写死的。比如要使用 `/users/me` 获取当前用户的数据。然后还要使用 `/users/{user_id}`，通过用户 ID 获取指定用户的数据。由于*路径操作*是按顺序依次运行的，因此，一定要在 `/users/{user_id}` 之前声明 `/users/me` ：
+有时，路径操作中的路径是写死的。比如要使用 `/users/me` 获取当前用户的数据。然后还要使用 `/users/{user_id}`，通过用户 ID 获取指定用户的数据。由于路径操作是按顺序依次运行的，因此，一定要在 `/users/{user_id}` 之前声明 `/users/me` ：
 
 ```python 
 from fastapi import FastAPI
@@ -194,11 +191,11 @@ async def read_user(user_id: str):
 ```
 
 
-否则，`/users/{user_id}` 将匹配 `/users/me`，FastAPI 会**认为**正在接收值为 `"me"` 的 `user_id` 参数。
+否则，`/users/{user_id}` 将匹配 `/users/me`，FastAPI 会认为正在接收值为 `"me"` 的 `user_id` 参数。
 
 ## 5.3 预设值
 
-路径操作使用 Python 的 `Enum` 类型接收预设的*路径参数*。
+路径操作使用 Python 的 `Enum` 类型接收预设的路径参数。
 
 ### 5.3.1 使用 Enum 类
 
@@ -235,18 +232,18 @@ async def get_model(model_name: ModelName):
 
 ### 5.3.2 包含路径的路径参数
 
-假设*路径操作*的路径为 `/files/{file_path}`。但需要 `file_path` 中也包含*路径*，比如，`home/johndoe/myfile.txt`。此时，该文件的 URL 是这样的：`/files/home/johndoe/myfile.txt`。
+假设路径操作的路径为 `/files/{file_path}`。但需要 `file_path` 中也包含*路径*，比如，`home/johndoe/myfile.txt`。此时，该文件的 URL 是这样的：`/files/home/johndoe/myfile.txt`。
 
-OpenAPI 不支持声明包含路径的*路径参数*，因为这会导致测试和定义更加困难。不过，仍可使用 Starlette 内置工具在 **FastAPI** 中实现这一功能。而且不影响文档正常运行，但是不会添加该参数包含路径的说明。
+OpenAPI 不支持声明包含路径的路径参数，因为这会导致测试和定义更加困难。不过，仍可使用 Starlette 内置工具在 **FastAPI** 中实现这一功能。而且不影响文档正常运行，但是不会添加该参数包含路径的说明。
 
-直接使用 Starlette 的选项声明包含*路径*的*路径参数*：
+直接使用 Starlette 的选项声明包含路径的路径参数：
 
 ```markdown 
 /files/{file_path:path}
 ```
 
 
-本例中，参数名为 `file_path`，结尾部分的 `:path` 说明该参数应匹配*路径*。
+本例中，参数名为 `file_path`，结尾部分的 `:path` 说明该参数应匹配路径。
 
 ```python 
 from fastapi import FastAPI
